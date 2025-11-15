@@ -1,7 +1,5 @@
 ﻿using Colossal.Entities;
 using Colossal.UI.Binding;
-using Game.Net;
-using Game.Prefabs;
 using Game.UI.InGame;
 using RoadSpeedAdjuster.Extensions;
 using RoadSpeedAdjuster.Utils;
@@ -9,40 +7,29 @@ using Unity.Entities;
 
 namespace RoadSpeedAdjuster.Systems
 {
-    /// <summary>
-    /// Adds a new custom info section to the Selected Info Panel
-    /// when a road is selected. No logic yet — just UI binding.
-    /// </summary>
+    [UpdateInGroup(typeof(Game.UI.InGame.SelectedInfoUISystem))]
     public partial class RoadSpeedAdjusterInfoPanelSystem : ExtendedInfoSectionBase
     {
         private PrefixedLogger m_Log;
 
-        // Binding to send values to UI (float for now)
         private ValueBindingHelper<float> m_DummyValueBinding;
 
-        // Access to vanilla UI system
         private SelectedInfoUISystem m_SelectedInfoUISystem;
 
-        /// Display group (tab)
         protected override string group => "RoadSpeedAdjuster";
 
-        /// Only show when selected entity is a road
         protected override bool displayForUnderConstruction => false;
 
-        public override void OnWriteProperties(IJsonWriter writer)
-        {
-            // Nothing yet
-        }
+        public override void OnWriteProperties(IJsonWriter writer) { }
 
-        protected override void OnProcess()
-        {
-            // No logic yet
-        }
+        protected override void OnProcess() { }
 
         protected override void Reset()
         {
             visible = false;
-            m_DummyValueBinding.Value = 0f;
+
+            if (m_DummyValueBinding != null)
+                m_DummyValueBinding.Value = 10f;   // safe slider min
         }
 
         protected override void OnCreate()
@@ -52,45 +39,45 @@ namespace RoadSpeedAdjuster.Systems
             m_Log = new PrefixedLogger(nameof(RoadSpeedAdjusterInfoPanelSystem));
             m_Log.Info("OnCreate");
 
-            // Register this UI section
             m_InfoUISystem.AddMiddleSection(this);
 
-            // Get vanilla UI system
             m_SelectedInfoUISystem = World.GetOrCreateSystemManaged<SelectedInfoUISystem>();
 
-            // Create UI value binding
-            m_DummyValueBinding = CreateBinding("INFOPANEL_ROAD_DUMMY_VALUE", 0f);
+            // -----------------------------
+            // Binding (UI reads this)
+            // -----------------------------
+            m_DummyValueBinding = CreateBinding("INFOPANEL_ROAD_DUMMY_VALUE", 10f);
 
-            // Create UI trigger → calls Method DummyTrigger()
-            CreateTrigger("INFOPANEL_ROAD_DUMMY_TRIGGER", DummyTrigger);
+            // initial safe update inside slider range
+            m_DummyValueBinding.Value = 10f;
+
+            // -----------------------------
+            // Trigger (UI writes this)
+            // -----------------------------
+            CreateTrigger<float>("INFOPANEL_ROAD_DUMMY_VALUE_CHANGED", OnDummyValueChanged);
         }
 
         protected override void OnUpdate()
         {
             base.OnUpdate();
 
-            // Check the selected entity
-            var entity = selectedEntity;
+            // force visible while debugging
+            visible = true;
 
-            // Validate: does it have a Road component?
-            /*if (EntityManager.Exists(entity) &&
-            EntityManager.HasComponent<Segment>(entity))
-            {
-                visible = true;
-            }
-            else
-            {
-                visible = false;
-            }*/
-            visible = true;          // 👈 force it always visible
-            m_DummyValueBinding.Value = 999f; // test value so you’ll see it
+            // re-push current value to UI every frame (stability requirement)
+            m_DummyValueBinding.Value = m_DummyValueBinding.Value;
 
-            RequestUpdate(); // Tell UI to refresh
+            RequestUpdate();
         }
 
-        private void DummyTrigger()
+        private void OnDummyValueChanged(float newValue)
         {
-            m_Log.Info("UI Trigger Clicked");
+            m_Log.Info($"Slider changed: {newValue}");
+
+            // reflect slider change back to UI
+            m_DummyValueBinding.Value = newValue;
+
+            // future: apply to road
         }
     }
 }

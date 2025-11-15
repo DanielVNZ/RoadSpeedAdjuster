@@ -1,23 +1,66 @@
-﻿import React from "react";
-import { VC, VF } from "./Components";
-import { ROAD_DUMMY_VALUE } from "./bindings";
+﻿import React, { useEffect, useState, useRef } from "react";
+import { VC, VF, VT } from "./Components";
+import { ROAD_DUMMY_VALUE, SetRoadDummyValue } from "./bindings";
+import { Slider } from "../slider/slider";
 
-// Mutator: receives component map, adds our entry, returns it
 export const RoadSpeedSelectedInfoPanelComponent = (componentList: any) => {
+
     const Component: React.FC = () => {
+
+        const [value, setValue] = useState(10);
+        const dragging = useRef(false);
+
+        useEffect(() => {
+            let last = value;
+
+            const interval = setInterval(() => {
+                if (dragging.current) return;
+
+                try {
+                    const v = ROAD_DUMMY_VALUE.value;
+                    if (typeof v === "number" && v !== last) {
+                        last = v;
+                        setValue(v);
+                    }
+                } catch { }
+            }, 120);
+
+            return () => clearInterval(interval);
+        }, []);
+
+        const handleChange = (v: number) => {
+            dragging.current = true;
+            setValue(v);
+            SetRoadDummyValue(v);
+            setTimeout(() => dragging.current = false, 80);
+        };
+
         return (
-            <VC.InfoSection focusKey={VF.FOCUS_DISABLED} disableFocus={true}>
+            <VC.InfoSection disableFocus={true}>
                 <VC.InfoRow
                     left="Speed Limit"
-                    right={`${ROAD_DUMMY_VALUE.value} km/h`}
-                    disableFocus={true}
+                    right={
+                        <div style={{
+                            width: "100%",
+                            padding: "4px 0",
+                            display: "flex",
+                            alignItems: "center",
+                        }}>
+                            <Slider
+                                start={10}
+                                end={200}
+                                value={value}
+                                onChange={handleChange}
+                                className={VT.slider?.slider}
+                                theme={VT.slider}
+                            />
+                        </div>
+                    }
                 />
             </VC.InfoSection>
         );
     };
 
-    // MUST exactly match your C# system name
     componentList["RoadSpeedAdjuster.Systems.RoadSpeedAdjusterInfoPanelSystem"] = Component;
-
     return componentList;
 };

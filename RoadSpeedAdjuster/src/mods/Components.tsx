@@ -1,13 +1,13 @@
-import { ModuleRegistry } from "cs2/modding";
+﻿import { ModuleRegistry } from "cs2/modding";
 import type { IVanillaComponents, IVanillaThemes, IVanillaFocus } from "./types";
 
 // -------------------------------------------------------
-// Vanilla UI components we want to hook into (INCLUDING ROAD SECTION)
+// Vanilla UI Components
 // -------------------------------------------------------
 const modulePaths = [
     {
         path: "game-ui/game/components/selected-info-panel/selected-info-sections/road-section/road-section.tsx",
-        components: ["RoadSection"],   // <-- IMPORTANT!
+        components: ["RoadSection"],
     },
     {
         path: "game-ui/game/components/selected-info-panel/shared-components/info-section/info-section.tsx",
@@ -22,13 +22,13 @@ const modulePaths = [
         components: ["InfoLink"],
     },
     {
-        path: "game-ui/game/components/tool-options/tool-button/tool-button.tsx",
-        components: ["ToolButton"],
+        path: "game-ui/common/input/slider/slider.tsx",
+        components: ["Slider"],
     },
 ];
 
 // -------------------------------------------------------
-// SCSS Themes
+// SCSS Themes — REAL slider theme
 // -------------------------------------------------------
 const themePaths = [
     {
@@ -42,7 +42,11 @@ const themePaths = [
     {
         path: "game-ui/common/panel/themes/default.module.scss",
         name: "panel",
-    }
+    },
+    {
+        path: "game-ui/common/input/slider/themes/default.module.scss",
+        name: "slider",     // ← THIS is the correct vanilla slider styling
+    },
 ];
 
 // -------------------------------------------------------
@@ -53,11 +57,11 @@ export const VT = {} as IVanillaThemes;
 export const VF = {} as IVanillaFocus;
 
 // -------------------------------------------------------
-// INITIALIZER � called from index.ts / register()
+// INITIALIZER
 // -------------------------------------------------------
 export const initialize = (moduleRegistry: ModuleRegistry) => {
 
-    // Load UI components
+    // Load components
     modulePaths.forEach(({ path, components }) => {
         const module = moduleRegistry.registry.get(path);
         if (!module) return;
@@ -67,13 +71,13 @@ export const initialize = (moduleRegistry: ModuleRegistry) => {
         });
     });
 
-    // Load SCSS theme classes
+    // Load SCSS themes
     themePaths.forEach(({ path, name }) => {
         const module = moduleRegistry.registry.get(path)?.classes;
         VT[name] = module ?? {};
     });
 
-    // Load focus keys
+    // Load focus
     const focusKeyModule = moduleRegistry.registry.get("game-ui/common/focus/focus-key.ts");
     VF.FOCUS_DISABLED = focusKeyModule?.FOCUS_DISABLED;
     VF.FOCUS_AUTO = focusKeyModule?.FOCUS_AUTO;
