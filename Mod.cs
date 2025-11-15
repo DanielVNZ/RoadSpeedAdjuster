@@ -22,8 +22,11 @@ namespace RoadSpeedAdjuster
             if (GameManager.instance.modManager.TryGetExecutableAsset(this, out var asset))
                 log.Info($"Current mod asset at {asset.path}");
 
-            // ⭐ REGISTER YOUR UI SYSTEM (CRITICAL FIX)
             updateSystem.UpdateAt<RoadSpeedAdjusterInfoPanelSystem>(SystemUpdatePhase.UIUpdate);
+            updateSystem.UpdateAt<RoadSpeedAdjusterUISystem>(SystemUpdatePhase.UIUpdate);
+            updateSystem.UpdateAt<RoadSpeedApplySystem>(SystemUpdatePhase.GameSimulation);
+
+
 
             log.Info("Registered RoadSpeedAdjusterInfoPanelSystem in UIUpdate phase.");
         }

@@ -5,19 +5,22 @@ import mod from "../../mod.json";
 // ----------------------------
 // Binding Keys (match C#)
 // ----------------------------
-export const ROAD_DUMMY_VALUE_KEY = "INFOPANEL_ROAD_DUMMY_VALUE";
-export const ROAD_DUMMY_TRIGGER_KEY = "INFOPANEL_ROAD_DUMMY_VALUE_CHANGED";
+// C#:
+//   new ValueBinding<float>("RoadSpeedAdjuster", "INFOPANEL_SPEED_VALUE", 10f);
+//   new TriggerBinding<float>("RoadSpeedAdjuster", "INFOPANEL_SPEED_CHANGED", OnSliderChanged);
+export const SPEED_VALUE_KEY = "INFOPANEL_SPEED_VALUE";
+export const SPEED_CHANGED_KEY = "INFOPANEL_SPEED_CHANGED";
 
 // ----------------------------
 // Value Binding (C# → UI)
 // ----------------------------
-export const ROAD_DUMMY_VALUE = bindValue<number>(
+export const SPEED_VALUE = bindValue<number>(
     mod.id,
-    ROAD_DUMMY_VALUE_KEY
+    SPEED_VALUE_KEY
 );
 
 // ----------------------------
 // Trigger (UI → C#)
 // ----------------------------
-export const SetRoadDummyValue = (value: number) =>
-    trigger(mod.id, ROAD_DUMMY_TRIGGER_KEY, value);
+export const SetSpeedValue = (value: number) =>
+    trigger(mod.id, SPEED_CHANGED_KEY, value);
