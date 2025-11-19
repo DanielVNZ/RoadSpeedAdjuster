@@ -25,6 +25,10 @@ const modulePaths = [
         path: "game-ui/common/input/slider/slider.tsx",
         components: ["Slider"],
     },
+    {
+        path: "game-ui/game/components/tool-options/tool-button/tool-button.tsx",
+        components: ["ToolButton"],
+    },
 ];
 
 // -------------------------------------------------------
@@ -45,7 +49,11 @@ const themePaths = [
     },
     {
         path: "game-ui/common/input/slider/themes/default.module.scss",
-        name: "slider",     // ← THIS is the correct vanilla slider styling
+        name: "slider",
+    },
+    {
+        path: "game-ui/game/components/tool-options/tool-button/tool-button.module.scss",
+        name: "toolButton",
     },
 ];
 

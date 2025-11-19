@@ -6,6 +6,7 @@ export const Slider = (props: any) => {
     return (
         <VSlider
             {...props}
+            step={props.step}
             onChange={(v: number) => props.onChange(v)}
         />
     );

@@ -1,0 +1,104 @@
+﻿import React, { useState, useEffect, useRef } from "react";
+import { INITIAL_SPEED, ApplySpeed } from "./bindings";
+import { VanillaComponentResolver } from "./VanillaComponentResolver";
+import { Button } from "./Button";
+
+export const RoadSpeedInfoSection = (componentList: any) => {
+  const Component: React.FC = () => {
+    const [pendingSpeed, setPendingSpeed] = useState(50);
+    const [isApplying, setIsApplying] = useState(false);
+    const dragging = useRef(false);
+    const lastBindingValue = useRef(50);
+
+    const resolver = VanillaComponentResolver.instance;
+    const InfoSection = resolver.InfoSection;
+    const InfoRow = resolver.InfoRow;
+    const Slider = resolver.Slider;
+    const FOCUS_DISABLED = resolver.FOCUS_DISABLED;
+
+    useEffect(() => {
+      const interval = setInterval(() => {
+        if (dragging.current) return;
+
+        try {
+          const v = INITIAL_SPEED.value;
+          if (typeof v === "number" && v !== lastBindingValue.current && v > 0) {
+            lastBindingValue.current = v;
+            setPendingSpeed(v);
+          }
+        } catch { }
+      }, 120);
+
+      return () => clearInterval(interval);
+    }, []); // Empty dependency array - only run once on mount
+
+    const handleSliderChange = (value: number) => {
+      dragging.current = true;
+      // Round to nearest 5
+      const roundedValue = Math.round(value / 5) * 5;
+      setPendingSpeed(roundedValue);
+      setTimeout(() => dragging.current = false, 80);
+    };
+
+    const handleApply = () => {
+      setIsApplying(true);
+      ApplySpeed(pendingSpeed);
+      setTimeout(() => setIsApplying(false), 500);
+    };
+
+    return (
+      <InfoSection disableFocus={true}>
+        {/* Current Speed Limit Display */}
+        <InfoRow
+          left="Current Speed Limit"
+          right={`${Math.round(pendingSpeed)} km/h`}
+        />
+
+        {/* Adjust Speed Limit Slider */}
+        <InfoRow
+          left="Adjust Speed Limit"
+          right={
+            <div style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+            }}>
+              <div style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                marginRight: "16rem",
+              }}>
+                <Slider
+                  focusKey={FOCUS_DISABLED}
+                  start={5}
+                  end={140}
+                  step={5}
+                  value={pendingSpeed}
+                  onChange={handleSliderChange}
+                  theme={resolver.sliderTheme}
+                />
+              </div>
+              <div style={{
+                width: "65rem",
+                flexShrink: 0,
+              }}>
+                <Button
+                  focusKey={FOCUS_DISABLED}
+                  selected={isApplying}
+                  disabled={isApplying}
+                  onSelect={handleApply}
+                >
+                  {isApplying ? "✓" : "Apply"}
+                </Button>
+              </div>
+            </div>
+          }
+        />
+      </InfoSection>
+    );
+  };
+
+  componentList["RoadSpeedAdjuster.Systems.RoadSpeedToolUISystem"] = Component;
+  return componentList;
+};

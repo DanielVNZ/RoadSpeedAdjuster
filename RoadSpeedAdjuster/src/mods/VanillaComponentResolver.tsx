@@ -22,6 +22,26 @@ type PropsToolButton = {
     onSelect?: (x: any) => any;
 } & HTMLAttributes<any>;
 
+type PropsInfoButton = {
+    focusKey?: FocusKey;
+    selected?: boolean;
+    disabled?: boolean;
+    className?: string;
+    children?: ReactNode;
+    onSelect?: () => void;
+} & HTMLAttributes<any>;
+
+type PropsButton = {
+    focusKey?: FocusKey;
+    selected?: boolean;
+    disabled?: boolean;
+    variant?: "flat" | "primary" | "round" | "menu" | "icon" | "floating" | "default";
+    theme?: any;
+    className?: string;
+    children?: ReactNode;
+    onSelect?: () => void;
+} & HTMLAttributes<any>;
+
 type PropsStepToolButton = {
     focusKey?: UniqueFocusKey | null;
     selectedValue: number;
@@ -35,6 +55,29 @@ type PropsSection = {
     title?: string | null;
     uiTag?: string;
     children: string | JSX.Element | JSX.Element[];
+};
+
+type PropsInfoSection = {
+    focusKey?: FocusKey;
+    tooltip?: ReactNode;
+    disableFocus?: boolean;
+    className?: string;
+    children?: ReactNode;
+};
+
+type PropsInfoRow = {
+    icon?: string;
+    left?: ReactNode;
+    right?: ReactNode;
+    tooltip?: ReactNode;
+    link?: ReactNode;
+    uppercase?: boolean;
+    subRow?: boolean;
+    subRowDimmed?: boolean;
+    disableFocus?: boolean;
+    className?: string;
+    noShrinkRight?: boolean;
+    justifyLeft?: boolean;
 };
 
 // VanillaComponentResolver.tsx
@@ -57,6 +100,7 @@ type SliderProps = {
     value: number;
     start: number;
     end: number;
+    step?: number;
     gamepadStep?: number;
     disabled?: boolean;
     vertical?: boolean;
@@ -78,10 +122,18 @@ type SliderProps = {
 // This is an array of the different components and sass themes that are appropriate for your UI. You need to figure out which ones you need from the registry.
 const registryIndex = {
     Section: ["game-ui/game/components/tool-options/mouse-tool-options/mouse-tool-options.tsx", "Section"],
+    Button: ["game-ui/common/input/button/button.tsx", "Button"],
+    InfoButton: ["game-ui/game/components/selected-info-panel/shared-components/info-button/info-button.tsx", "InfoButton"],
     ToolButton: ["game-ui/game/components/tool-options/tool-button/tool-button.tsx", "ToolButton"],
     StepToolButton: ["game-ui/game/components/tool-options/tool-button/tool-button.tsx", "StepToolButton"],
+    InfoSection: ["game-ui/game/components/selected-info-panel/shared-components/info-section/info-section.tsx", "InfoSection"],
+    InfoRow: ["game-ui/game/components/selected-info-panel/shared-components/info-row/info-row.tsx", "InfoRow"],
+    buttonTheme: ["game-ui/common/input/button/themes/default-button.module.scss", "classes"],
+    infoButtonTheme: ["game-ui/game/components/selected-info-panel/shared-components/info-button/info-button.module.scss", "classes"],
     toolButtonTheme: ["game-ui/game/components/tool-options/tool-button/tool-button.module.scss", "classes"],
     mouseToolOptionsTheme: ["game-ui/game/components/tool-options/mouse-tool-options/mouse-tool-options.module.scss", "classes"],
+    infoRowTheme: ["game-ui/game/components/selected-info-panel/shared-components/info-row/info-row.module.scss", "classes"],
+    sliderTheme: ["game-ui/common/input/slider/themes/default.module.scss", "classes"],
     FOCUS_DISABLED: ["game-ui/common/focus/focus-key.ts", "FOCUS_DISABLED"],
     FOCUS_AUTO: ["game-ui/common/focus/focus-key.ts", "FOCUS_AUTO"],
     useUniqueFocusKey: ["game-ui/common/focus/focus-key.ts", "useUniqueFocusKey"],
@@ -118,11 +170,23 @@ export class VanillaComponentResolver {
     public get Section(): (props: PropsSection) => JSX.Element {
         return this.cachedData["Section"] ?? this.updateCache("Section");
     }
+    public get Button(): (props: PropsButton) => JSX.Element {
+        return this.cachedData["Button"] ?? this.updateCache("Button");
+    }
+    public get InfoButton(): (props: PropsInfoButton) => JSX.Element {
+        return this.cachedData["InfoButton"] ?? this.updateCache("InfoButton");
+    }
     public get ToolButton(): (props: PropsToolButton) => JSX.Element {
         return this.cachedData["ToolButton"] ?? this.updateCache("ToolButton");
     }
     public get StepToolButton(): (props: PropsStepToolButton) => JSX.Element {
         return this.cachedData["StepToolButton"] ?? this.updateCache("StepToolButton");
+    }
+    public get InfoSection(): (props: PropsInfoSection) => JSX.Element {
+        return this.cachedData["InfoSection"] ?? this.updateCache("InfoSection");
+    }
+    public get InfoRow(): (props: PropsInfoRow) => JSX.Element {
+        return this.cachedData["InfoRow"] ?? this.updateCache("InfoRow");
     }
     public get ColorField(): (props: ColorFieldProps) => JSX.Element {
         return this.cachedData["ColorField"] ?? this.updateCache("ColorField");
@@ -131,11 +195,23 @@ export class VanillaComponentResolver {
         return this.cachedData["Slider"] ?? this.updateCache("Slider");
     }
 
+    public get buttonTheme(): Theme | any {
+        return this.cachedData["buttonTheme"] ?? this.updateCache("buttonTheme");
+    }
+    public get infoButtonTheme(): Theme | any {
+        return this.cachedData["infoButtonTheme"] ?? this.updateCache("infoButtonTheme");
+    }
     public get toolButtonTheme(): Theme | any {
         return this.cachedData["toolButtonTheme"] ?? this.updateCache("toolButtonTheme");
     }
     public get mouseToolOptionsTheme(): Theme | any {
         return this.cachedData["mouseToolOptionsTheme"] ?? this.updateCache("mouseToolOptionsTheme");
+    }
+    public get infoRowTheme(): Theme | any {
+        return this.cachedData["infoRowTheme"] ?? this.updateCache("infoRowTheme");
+    }
+    public get sliderTheme(): Theme | any {
+        return this.cachedData["sliderTheme"] ?? this.updateCache("sliderTheme");
     }
     public get assetGridTheme(): Theme | any {
         return this.cachedData["assetGridTheme"] ?? this.updateCache("assetGridTheme");

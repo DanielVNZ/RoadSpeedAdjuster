@@ -10,6 +10,11 @@
 	<!--Imports must be after PropertyGroup block-->
 	<Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.props" />
 	<Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.targets" />
+	<ItemGroup>
+	  <Compile Remove="RoadSpeedAdjuster\**" />
+	  <EmbeddedResource Remove="RoadSpeedAdjuster\**" />
+	  <None Remove="RoadSpeedAdjuster\**" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<Reference Include="Game">
@@ -65,9 +70,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="RoadSpeedAdjuster\src\slider\" />
 	  <Folder Include="Utils\" />
 	</ItemGroup>
+
+	<ItemGroup>
+		<Content Include="RoadSpeedAdjuster\**\*.*" />
+	</ItemGroup>
+
 
 	<Target Name="BuildUI" AfterTargets="AfterBuild">
 		<Exec Command="npm run build" WorkingDirectory="$(ProjectDir)/RoadSpeedAdjuster" />

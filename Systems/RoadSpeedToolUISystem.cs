@@ -6,6 +6,7 @@ using Game.Tools;
 using Game.UI;
 using Game.UI.InGame;
 using RoadSpeedAdjuster.Components;
+using RoadSpeedAdjuster.Extensions;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Entities;
@@ -18,7 +19,8 @@ using Owner = Game.Common.Owner;
 
 namespace RoadSpeedAdjuster.Systems
 {
-    public partial class RoadSpeedToolUISystem : UISystemBase
+    [UpdateInGroup(typeof(SelectedInfoUISystem))]
+    public partial class RoadSpeedToolUISystem : ExtendedInfoSectionBase
     {
         private SelectedInfoUISystem _selectedInfoUISystem;
 
@@ -29,8 +31,12 @@ namespace RoadSpeedAdjuster.Systems
         private readonly List<float> _speeds = new();
 
         // Binds TO JS: visible + initial value
-        private ValueBinding<float> _initialSpeedBinding;
-        private ValueBinding<bool> _visibleBinding;
+        private ValueBindingHelper<float> _initialSpeedBinding;
+        private ValueBindingHelper<bool> _visibleBinding;
+
+        protected override string group => "RoadSpeedAdjuster.Systems.RoadSpeedToolUISystem";
+
+        protected override bool displayForUnderConstruction => false;
 
         protected override void OnCreate()
         {
@@ -38,26 +44,39 @@ namespace RoadSpeedAdjuster.Systems
 
             Mod.log.Info("RoadSpeedToolUI: OnCreate");
 
-            // Initial value shown on the slider
-            AddBinding(_initialSpeedBinding =
-                new ValueBinding<float>(Mod.Id, "BINDING:INFOPANEL_ROAD_SPEED", 50f));
-
-            // Visibility
-            AddBinding(_visibleBinding =
-                new ValueBinding<bool>(Mod.Id, "BINDING:INFOPANEL_VISIBLE", false));
-
-            // Apply button trigger
-            AddBinding(new TriggerBinding<float>(
-                Mod.Id,
-                "TRIGGER:APPLY_SPEED",
-                HandleApplySpeed));
+            // Register this section with the info panel
+            m_InfoUISystem.AddMiddleSection(this);
 
             _selectedInfoUISystem = World.GetOrCreateSystemManaged<SelectedInfoUISystem>();
+
+            // Initial value shown on the slider
+            _initialSpeedBinding = CreateBinding("INFOPANEL_ROAD_SPEED", 50f);
+
+            // Visibility
+            _visibleBinding = CreateBinding("INFOPANEL_VISIBLE", false);
+
+            // Apply button trigger
+            CreateTrigger<float>("APPLY_SPEED", HandleApplySpeed);
+
+            // Initialize with safe values
+            _initialSpeedBinding.Value = 50f;
+            _visibleBinding.Value = false;
 
             Mod.log.Info("RoadSpeedToolUI: Bindings + SelectedInfoUISystem registered.");
         }
 
-        protected override void OnUpdate()
+        protected override void Reset()
+        {
+            // Reset state when selection changes
+            _selectedEntity = Entity.Null;
+            _lastCheckedEntity = Entity.Null;
+            _streetEdges.Clear();
+            _initialSpeedBinding.Value = 50f;
+            _visibleBinding.Value = false;
+            visible = false;
+        }
+
+        protected override void OnProcess()
         {
             var currentSelection = _selectedInfoUISystem.selectedEntity;
 
@@ -68,15 +87,17 @@ namespace RoadSpeedAdjuster.Systems
 
             if (currentSelection == Entity.Null)
             {
-                _initialSpeedBinding.Update(50f);
-                _visibleBinding.Update(false);
+                _initialSpeedBinding.Value = 50f;
+                _visibleBinding.Value = false;
+                visible = false;
                 return;
             }
 
             if (!EntityManager.HasComponent<Aggregate>(currentSelection))
             {
-                _initialSpeedBinding.Update(50f);
-                _visibleBinding.Update(false);
+                _initialSpeedBinding.Value = 50f;
+                _visibleBinding.Value = false;
+                visible = false;
                 return;
             }
 
@@ -84,8 +105,9 @@ namespace RoadSpeedAdjuster.Systems
 
             if (_streetEdges.Count == 0)
             {
-                _initialSpeedBinding.Update(50f);
-                _visibleBinding.Update(false);
+                _initialSpeedBinding.Value = 50f;
+                _visibleBinding.Value = false;
+                visible = false;
                 return;
             }
 
@@ -95,12 +117,42 @@ namespace RoadSpeedAdjuster.Systems
 
             if (speed > 0)
             {
-                _initialSpeedBinding.Update(speed);
-                _visibleBinding.Update(true);
+                _initialSpeedBinding.Value = speed;
+                _visibleBinding.Value = true;
+                visible = true;
             }
-            else {
-                _visibleBinding.Update(false);
+            else 
+            {
+                _visibleBinding.Value = false;
+                visible = false;
             }
+        }
+
+        protected override void OnUpdate()
+        {
+            base.OnUpdate();
+
+            // TEMPORARY DEBUG: Force visible
+            visible = true;
+
+            // Re-push current values to UI every frame (stability requirement)
+            if (_initialSpeedBinding != null)
+            {
+                _initialSpeedBinding.Value = _initialSpeedBinding.Value;
+            }
+
+            if (_visibleBinding != null)
+            {
+                _visibleBinding.Value = _visibleBinding.Value;
+            }
+
+            RequestUpdate();
+        }
+
+        public override void OnWriteProperties(IJsonWriter writer)
+        {
+            // Write any additional properties if needed
+            // For now, we're using bindings so this can be empty
         }
 
         private float GetStreetSpeed(Entity edge)
@@ -207,7 +259,7 @@ namespace RoadSpeedAdjuster.Systems
             }
 
             // Reflect new speed immediately in UI binding
-            _initialSpeedBinding.Update(newSpeed);
+            _initialSpeedBinding.Value = newSpeed;
 
             Mod.log.Info("ApplySpeed complete - speeds applied, flags preserved.");
         }
