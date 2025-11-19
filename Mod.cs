@@ -2,38 +2,33 @@
 using Game;
 using Game.Modding;
 using Game.SceneFlow;
-using Game.Simulation;
 using RoadSpeedAdjuster.Systems;
 
 namespace RoadSpeedAdjuster
 {
     public class Mod : IMod
     {
-        public static ILog log = LogManager.GetLogger($"{nameof(RoadSpeedAdjuster)}.{nameof(Mod)}")
-            .SetShowsErrorsInUI(false);
+        public static readonly string Id = "RoadSpeedAdjuster";
 
-        public const string Id = "RoadSpeedAdjuster";
-        public const string ModName = "RoadSpeedAdjuster";
+        public static ILog log = LogManager.GetLogger($"{nameof(RoadSpeedAdjuster)}.{nameof(Mod)}")
+            .SetShowsErrorsInUI(true);
 
         public void OnLoad(UpdateSystem updateSystem)
         {
-            log.Info($"{ModName} OnLoad");
+            log.Info("OnLoad()");
 
-            if (GameManager.instance.modManager.TryGetExecutableAsset(this, out var asset))
-                log.Info($"Current mod asset at {asset.path}");
+            // --- Apply speeds when Updated component is present ---
+            updateSystem.UpdateAt<RoadSpeedApplySystem>(SystemUpdatePhase.ModificationEnd);
 
-            updateSystem.UpdateAt<RoadSpeedAdjusterInfoPanelSystem>(SystemUpdatePhase.UIUpdate);
-            updateSystem.UpdateAt<RoadSpeedAdjusterUISystem>(SystemUpdatePhase.UIUpdate);
-            updateSystem.UpdateAt<RoadSpeedApplySystem>(SystemUpdatePhase.GameSimulation);
+            // --- UI always LAST ---
+            updateSystem.UpdateAt<RoadSpeedToolUISystem>(SystemUpdatePhase.UIUpdate);
 
-
-
-            log.Info("Registered RoadSpeedAdjusterInfoPanelSystem in UIUpdate phase.");
+            log.Info("Systems registered.");
         }
 
         public void OnDispose()
         {
-            log.Info($"{ModName} OnDispose");
+            log.Info("OnDispose()");
         }
     }
 }

@@ -66,6 +66,7 @@
 
 	<ItemGroup>
 	  <Folder Include="RoadSpeedAdjuster\src\slider\" />
+	  <Folder Include="Utils\" />
 	</ItemGroup>
 
 	<Target Name="BuildUI" AfterTargets="AfterBuild">

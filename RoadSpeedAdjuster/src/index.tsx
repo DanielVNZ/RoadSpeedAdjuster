@@ -1,30 +1,22 @@
-﻿// src/ui/index.tsx
-import { ModRegistrar, ModuleRegistry } from "cs2/modding";
+﻿import { ModRegistrar } from "cs2/modding";
 import { VanillaComponentResolver } from "./mods/VanillaComponentResolver";
-import { initialize as initVanillaComponents } from "./mods/Components";
-import { RoadSpeedSelectedInfoPanelComponent } from "./mods/InjectRoadSpeedIntoRoadSection";
-import mod from "../mod.json";
+import { initialize as initVC } from "./mods/Components";
+import { SpeedPanel } from "./mods/SpeedWindow";
 
-const register: ModRegistrar = (moduleRegistry: ModuleRegistry) => {
+const register: ModRegistrar = (registry) => {
+
     console.log("🚀 RoadSpeedAdjuster UI Init");
-    (window as any).rsareg = moduleRegistry;
 
-    // Old Klyte resolver (for tool buttons, etc.)
-    VanillaComponentResolver.setRegistry(moduleRegistry);
+    // 1. Allow Klyte resolver style (optional but harmless)
+    VanillaComponentResolver.setRegistry(registry);
 
-    // ⚠️ IMPORTANT: initialize VC / VT / VF (InfoSection, InfoRow, etc.)
-    initVanillaComponents(moduleRegistry);
+    // 2. Load Vanilla Components / SCSS so the Slider looks correct
+    initVC(registry);
 
-    console.log("🔧 Extending SelectedInfoSections");
+    // 3. Register speed panel - shows automatically when a road is selected
+    registry.append("Game", SpeedPanel);
 
-    // Platter / Recolor style: mutator ONLY, no wrapper
-    moduleRegistry.extend(
-        "game-ui/game/components/selected-info-panel/selected-info-sections/selected-info-sections.tsx",
-        "selectedInfoSectionComponents",
-        RoadSpeedSelectedInfoPanelComponent
-    );
-
-    console.log(`${mod.id} UI module registrations completed.`);
+    console.log("RoadSpeedAdjuster UI module registrations completed.");
 };
 
 export default register;

@@ -1,196 +1,249 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Colossal.UI.Binding;
+﻿using Colossal.UI.Binding;
 using Game.Common;
 using Game.Net;
-using Game.SceneFlow;
+using Game.Prefabs;
 using Game.Tools;
 using Game.UI;
+using Game.UI.InGame;
 using RoadSpeedAdjuster.Components;
-using RoadSpeedAdjuster.Utils;
+using System.Collections.Generic;
+using System.Linq;
 using Unity.Entities;
-using UnityEngine;
+using Unity.Mathematics;
+using CarLane = Game.Net.CarLane;
+using CarLaneFlags = Game.Net.CarLaneFlags;
+using SubLane = Game.Net.SubLane;
+using Updated = Game.Common.Updated;
 
 namespace RoadSpeedAdjuster.Systems
 {
     public partial class RoadSpeedToolUISystem : UISystemBase
     {
-        private PrefixedLogger _log;
-        
-        private ToolSystem _toolSystem;
-        private EntitySelectorToolSystem _entitySelectorTool;
-        private DefaultToolSystem _defaultTool;
-        
+        private SelectedInfoUISystem _selectedInfoUISystem;
+
         private Entity _selectedEntity;
-        private bool _changingSpeed;
-        private List<float> _speeds = new List<float>();
-        
-        private ValueBinding<bool> _toolActiveBinding;
-        private ValueBinding<float> _speedBinding;
+        private Entity _lastCheckedEntity;
+
+        private readonly List<Entity> _streetEdges = new();
+        private readonly List<float> _speeds = new();
+
+        // Binds TO JS: visible + initial value
+        private ValueBinding<float> _initialSpeedBinding;
         private ValueBinding<bool> _visibleBinding;
-        
-        public bool ToolActive
-        {
-            get => _toolActiveBinding.value;
-            set
-            {
-                if (value == _toolActiveBinding.value)
-                    return;
-                _toolActiveBinding.Update(value);
-                _toolSystem.activeTool = _toolActiveBinding.value ? _entitySelectorTool : _defaultTool;
-                _toolSystem.selected = Entity.Null;
-            }
-        }
-        
+
         protected override void OnCreate()
         {
             base.OnCreate();
-            
-            _log = new PrefixedLogger("RoadSpeedToolUI");
-            
-            // Create bindings
-            AddBinding(_toolActiveBinding = new ValueBinding<bool>(Mod.Id, "toolActive", false));
-            AddBinding(_speedBinding = new ValueBinding<float>(Mod.Id, "BINDING:INFOPANEL_ROAD_SPEED", 50f));
-            AddBinding(_visibleBinding = new ValueBinding<bool>(Mod.Id, "BINDING:INFOPANEL_VISIBLE", false));
-            AddBinding(new TriggerBinding<float>(Mod.Id, "TRIGGER:INFOPANEL_ROAD_SPEED", HandleSpeedChange));
-            AddBinding(new TriggerBinding(Mod.Id, "TRIGGER:ToggleTool", HandleToggleTool));
-            
-            // Get tool systems
-            _toolSystem = World.GetOrCreateSystemManaged<ToolSystem>();
-            _entitySelectorTool = World.GetOrCreateSystemManaged<EntitySelectorToolSystem>();
-            _defaultTool = World.GetOrCreateSystemManaged<DefaultToolSystem>();
-            
-            _selectedEntity = Entity.Null;
-            
-            _log.Info("RoadSpeedToolUISystem created");
+
+            Mod.log.Info("RoadSpeedToolUI: OnCreate");
+
+            // Initial value shown on the slider
+            AddBinding(_initialSpeedBinding =
+                new ValueBinding<float>(Mod.Id, "BINDING:INFOPANEL_ROAD_SPEED", 50f));
+
+            // Visibility
+            AddBinding(_visibleBinding =
+                new ValueBinding<bool>(Mod.Id, "BINDING:INFOPANEL_VISIBLE", false));
+
+            // Apply button trigger
+            AddBinding(new TriggerBinding<float>(
+                Mod.Id,
+                "TRIGGER:APPLY_SPEED",
+                HandleApplySpeed));
+
+            _selectedInfoUISystem = World.GetOrCreateSystemManaged<SelectedInfoUISystem>();
+
+            Mod.log.Info("RoadSpeedToolUI: Bindings + SelectedInfoUISystem registered.");
         }
-        
+
         protected override void OnUpdate()
         {
-            base.OnUpdate();
-            
-            if (_changingSpeed)
+            var currentSelection = _selectedInfoUISystem.selectedEntity;
+
+            if (currentSelection == _lastCheckedEntity)
                 return;
-            
-            // Check if selected entity changed
-            if (_selectedEntity != _toolSystem.selected)
+
+            _lastCheckedEntity = currentSelection;
+
+            if (currentSelection == Entity.Null)
             {
-                if (ToolActive && _toolSystem.activeTool != _entitySelectorTool)
-                    _toolSystem.activeTool = _entitySelectorTool;
-                
-                if (_toolSystem.selected == Entity.Null)
-                {
-                    // No entity selected
-                    _selectedEntity = Entity.Null;
-                    _speedBinding.Update(50f);
-                    _visibleBinding.Update(false);
-                    return;
-                }
-                
-                // New entity selected
-                var entity = _toolSystem.selected;
-                float averageSpeed = GetAverageSpeed(entity);
-                
-                if (averageSpeed > 0)
-                {
-                    _selectedEntity = entity;
-                    _speedBinding.Update(averageSpeed);
-                    _visibleBinding.Update(true);
-                    _log.Info($"Road selected: {entity.Index}, Speed: {averageSpeed}");
-                }
-                else
-                {
-                    _selectedEntity = Entity.Null;
-                    _speedBinding.Update(50f);
-                    _visibleBinding.Update(false);
-                }
+                _initialSpeedBinding.Update(50f);
+                _visibleBinding.Update(false);
+                return;
             }
-            else if (ToolActive && _toolSystem.activeTool != _entitySelectorTool)
+
+            if (!EntityManager.HasComponent<Aggregate>(currentSelection))
             {
-                ToolActive = false;
+                _initialSpeedBinding.Update(50f);
+                _visibleBinding.Update(false);
+                return;
+            }
+
+            FindStreetRoads(currentSelection);
+
+            if (_streetEdges.Count == 0)
+            {
+                _initialSpeedBinding.Update(50f);
+                _visibleBinding.Update(false);
+                return;
+            }
+
+            _selectedEntity = _streetEdges[0];
+
+            float speed = GetStreetSpeed(_selectedEntity);
+
+            if (speed > 0)
+            {
+                _initialSpeedBinding.Update(speed);
+                _visibleBinding.Update(true);
+            }
+            else {
+                _visibleBinding.Update(false);
             }
         }
-        
-        private float GetAverageSpeed(Entity entity)
+
+        private float GetStreetSpeed(Entity edge)
+        {
+            Entity baseEdge = edge;
+
+            if (EntityManager.HasComponent<Temp>(edge))
+                baseEdge = EntityManager.GetComponentData<Temp>(edge).m_Original;
+
+            // Check if custom speed exists
+            if (EntityManager.HasComponent<CustomSpeed>(baseEdge))
+                return EntityManager.GetComponentData<CustomSpeed>(baseEdge).m_Speed;
+
+            return GetAverageSpeed(edge);
+        }
+
+        private void FindStreetRoads(Entity aggregate)
+        {
+            _streetEdges.Clear();
+
+            var query = SystemAPI.QueryBuilder()
+                .WithAll<Edge, Aggregated>()
+                .Build();
+
+            var edges = query.ToEntityArray(Unity.Collections.Allocator.Temp);
+
+            foreach (var e in edges)
+            {
+                var a = EntityManager.GetComponentData<Aggregated>(e);
+                if (a.m_Aggregate == aggregate)
+                    _streetEdges.Add(e);
+            }
+
+            edges.Dispose();
+        }
+
+        private float GetAverageSpeed(Entity edge)
         {
             _speeds.Clear();
-            
-            try
+
+            if (!EntityManager.HasBuffer<SubLane>(edge))
+                return -1;
+
+            var sub = EntityManager.GetBuffer<SubLane>(edge);
+            var ignore = CarLaneFlags.Unsafe | CarLaneFlags.SideConnection;
+
+            foreach (var s in sub)
             {
-                if (EntityManager.TryGetBuffer<SubLane>(entity, true, out var subLanes))
-                {
-                    foreach (var subLane in subLanes)
-                    {
-                        var ignoreFlags = CarLaneFlags.Unsafe | CarLaneFlags.SideConnection;
-                        
-                        if (EntityManager.TryGetComponent(subLane.m_SubLane, out CarLane carLane) && 
-                            ((carLane.m_Flags & ignoreFlags) != ignoreFlags))
-                        {
-                            _speeds.Add(carLane.m_SpeedLimit);
-                        }
-                        
-                        if (EntityManager.TryGetComponent(subLane.m_SubLane, out TrackLane trackLane))
-                        {
-                            _speeds.Add(trackLane.m_SpeedLimit);
-                        }
-                    }
-                }
-                
-                return _speeds.Any() ? _speeds.Average() : -1f;
+                var lane = s.m_SubLane;
+
+                if (!EntityManager.HasComponent<CarLane>(lane))
+                    continue;
+
+                var car = EntityManager.GetComponentData<CarLane>(lane);
+
+                if ((car.m_Flags & ignore) != 0)
+                    continue;
+
+                // CarLane.m_SpeedLimit is in game units (2x m/s), convert to km/h
+                // 1 game unit = 0.5 m/s, so multiply by 1.8 to get km/h
+                _speeds.Add(car.m_SpeedLimit * 1.8f);
             }
-            finally
-            {
-                _speeds.Clear();
-            }
+
+            return _speeds.Count > 0 ? _speeds.Average() : -1f;
         }
-        
-        private void HandleSpeedChange(float newSpeed)
+
+        // APPLY BUTTON PUSHED
+        private void HandleApplySpeed(float newSpeed)
         {
-            if (_selectedEntity == Entity.Null || newSpeed <= 0)
+            if (_selectedEntity == Entity.Null || _streetEdges.Count == 0)
             {
-                _log.Warn("Speed change requested but no valid entity selected");
+                Mod.log.Warn("ApplySpeed with no valid selection/edges.");
                 return;
             }
-            
-            _changingSpeed = true;
-            
-            try
+
+            newSpeed = math.clamp(newSpeed, 5f, 300f);
+            // Game uses 2x m/s units, so divide by 1.8 instead of 3.6
+            float speedGameUnits = newSpeed / 1.8f;
+
+            Mod.log.Info($"ApplySpeed({newSpeed} km/h = {speedGameUnits} game units) → {_streetEdges.Count} edges");
+
+            foreach (var edge in _streetEdges)
             {
-                // Handle Temp entities (entities being edited)
-                if (EntityManager.TryGetComponent(_selectedEntity, out Temp temp))
+                // Handle temporary entities (being placed/edited)
+                Entity targetEdge = edge;
+                if (EntityManager.HasComponent<Temp>(edge))
                 {
-                    if (!EntityManager.HasComponent<CustomSpeed>(temp.m_Original))
-                        EntityManager.AddComponent<CustomSpeed>(temp.m_Original);
-                    
-                    EntityManager.SetComponentData(temp.m_Original, new CustomSpeed { m_Speed = newSpeed });
-                    
-                    if (!EntityManager.HasComponent<Updated>(temp.m_Original))
-                        EntityManager.AddComponent<Updated>(temp.m_Original);
+                    var temp = EntityManager.GetComponentData<Temp>(edge);
+                    targetEdge = temp.m_Original;
                 }
-                else
-                {
-                    if (!EntityManager.HasComponent<CustomSpeed>(_selectedEntity))
-                        EntityManager.AddComponent<CustomSpeed>(_selectedEntity);
-                    
-                    EntityManager.SetComponentData(_selectedEntity, new CustomSpeed { m_Speed = newSpeed });
-                    
-                    if (!EntityManager.HasComponent<Updated>(_selectedEntity))
-                        EntityManager.AddComponent<Updated>(_selectedEntity);
-                }
-                
-                _log.Info($"Speed changed to {newSpeed}");
+
+                // Store CustomSpeed permanently (in km/h)
+                if (!EntityManager.HasComponent<CustomSpeed>(targetEdge))
+                    EntityManager.AddComponent<CustomSpeed>(targetEdge);
+
+                EntityManager.SetComponentData(targetEdge, new CustomSpeed { m_Speed = newSpeed });
+
+                // *** IMMEDIATE FIX: Set CarLane speeds NOW ***
+                SetCarLaneSpeedsImmediate(edge, speedGameUnits);
+
+                // Mark for update so ApplySystem can restore it later (when road is updated by game)
+                EntityManager.AddComponent<Updated>(targetEdge);
             }
-            finally
-            {
-                _changingSpeed = false;
-            }
+
+            // NOTE: We DON'T mark the Aggregate as Updated to avoid resetting traffic lights
+            // Pathfinding will naturally update as vehicles route through the modified lanes
+
+            // Reflect new speed immediately in UI binding
+            _initialSpeedBinding.Update(newSpeed);
+
+            Mod.log.Info("ApplySpeed complete - pathfinding will update naturally.");
         }
-        
-        private void HandleToggleTool()
+
+        /// <summary>
+        /// IMMEDIATELY set the CarLane m_SpeedLimit and m_DefaultSpeedLimit for all sublanes
+        /// </summary>
+        private void SetCarLaneSpeedsImmediate(Entity edge, float speedGameUnits)
         {
-            ToolActive = !ToolActive;
-            _log.Info($"Tool active: {ToolActive}");
+            if (!EntityManager.HasBuffer<SubLane>(edge))
+                return;
+
+            var subLanes = EntityManager.GetBuffer<SubLane>(edge);
+            var ignore = CarLaneFlags.Unsafe | CarLaneFlags.SideConnection;
+
+            for (int i = 0; i < subLanes.Length; i++)
+            {
+                var subLane = subLanes[i];
+                var laneEntity = subLane.m_SubLane;
+
+                if (!EntityManager.HasComponent<CarLane>(laneEntity))
+                    continue;
+
+                var carLane = EntityManager.GetComponentData<CarLane>(laneEntity);
+
+                if ((carLane.m_Flags & ignore) != 0)
+                    continue;
+
+                // Set BOTH DefaultSpeedLimit AND SpeedLimit
+                carLane.m_DefaultSpeedLimit = speedGameUnits;
+                carLane.m_SpeedLimit = speedGameUnits;
+                EntityManager.SetComponentData(laneEntity, carLane);
+            }
+
+            Mod.log.Info($"  → Set CarLane speeds to {speedGameUnits} game units for {subLanes.Length} sublanes");
         }
     }
 }
