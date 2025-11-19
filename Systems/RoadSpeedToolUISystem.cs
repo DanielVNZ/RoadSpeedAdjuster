@@ -14,6 +14,7 @@ using CarLane = Game.Net.CarLane;
 using CarLaneFlags = Game.Net.CarLaneFlags;
 using SubLane = Game.Net.SubLane;
 using Updated = Game.Common.Updated;
+using Owner = Game.Common.Owner;
 
 namespace RoadSpeedAdjuster.Systems
 {
@@ -200,17 +201,15 @@ namespace RoadSpeedAdjuster.Systems
                 // *** IMMEDIATE FIX: Set CarLane speeds NOW ***
                 SetCarLaneSpeedsImmediate(edge, speedGameUnits);
 
-                // Mark for update so ApplySystem can restore it later (when road is updated by game)
-                EntityManager.AddComponent<Updated>(targetEdge);
+                // NOTE: We DON'T mark edges as Updated because that triggers intersection rebuilds
+                // The ApplySystem will restore speeds when the game naturally updates roads
+                // EntityManager.AddComponent<Updated>(targetEdge);
             }
-
-            // NOTE: We DON'T mark the Aggregate as Updated to avoid resetting traffic lights
-            // Pathfinding will naturally update as vehicles route through the modified lanes
 
             // Reflect new speed immediately in UI binding
             _initialSpeedBinding.Update(newSpeed);
 
-            Mod.log.Info("ApplySpeed complete - pathfinding will update naturally.");
+            Mod.log.Info("ApplySpeed complete - speeds applied, flags preserved.");
         }
 
         /// <summary>
@@ -222,7 +221,7 @@ namespace RoadSpeedAdjuster.Systems
                 return;
 
             var subLanes = EntityManager.GetBuffer<SubLane>(edge);
-            var ignore = CarLaneFlags.Unsafe | CarLaneFlags.SideConnection;
+            int modifiedCount = 0;
 
             for (int i = 0; i < subLanes.Length; i++)
             {
@@ -234,16 +233,21 @@ namespace RoadSpeedAdjuster.Systems
 
                 var carLane = EntityManager.GetComponentData<CarLane>(laneEntity);
 
-                if ((carLane.m_Flags & ignore) != 0)
-                    continue;
+                // Store the original flags EXPLICITLY
+                var originalFlags = carLane.m_Flags;
 
-                // Set BOTH DefaultSpeedLimit AND SpeedLimit
+                // ONLY modify speed fields
                 carLane.m_DefaultSpeedLimit = speedGameUnits;
                 carLane.m_SpeedLimit = speedGameUnits;
+                
+                // Ensure flags are preserved (should already be, but being explicit)
+                carLane.m_Flags = originalFlags;
+                
                 EntityManager.SetComponentData(laneEntity, carLane);
+                modifiedCount++;
             }
 
-            Mod.log.Info($"  → Set CarLane speeds to {speedGameUnits} game units for {subLanes.Length} sublanes");
+            Mod.log.Info($"  → Modified {modifiedCount} lanes (speed: {speedGameUnits} game units, all flags preserved)");
         }
     }
 }

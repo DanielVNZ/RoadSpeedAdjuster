@@ -7,6 +7,7 @@ using Unity.Jobs;
 using Game.Common;
 using Game.Net;
 using RoadSpeedAdjuster.Components;
+using Owner = Game.Common.Owner;
 
 namespace RoadSpeedAdjuster.Systems
 {
@@ -99,27 +100,29 @@ namespace RoadSpeedAdjuster.Systems
                     for (int i = 0; i < subLanes.Length; i++)
                     {
                         var subLane = subLanes[i];
-                        SetSpeedSubLane(subLane.m_SubLane, speedGameUnits);
+                        SetSpeedSubLane(entity, subLane.m_SubLane, speedGameUnits);
                         // DON'T reassign subLanes[i] - it breaks connectivity!
                     }
                 }
             }
 
-            private void SetSpeedSubLane(Entity laneEntity, float speedGameUnits)
+            private void SetSpeedSubLane(Entity edgeEntity, Entity laneEntity, float speedGameUnits)
             {
-                var ignoreFlags = CarLaneFlags.Unsafe | CarLaneFlags.SideConnection;
-
                 if (this.EntityManager.HasComponent<CarLane>(laneEntity))
                 {
                     var carLane = this.EntityManager.GetComponentData<CarLane>(laneEntity);
 
-                    if ((carLane.m_Flags & ignoreFlags) == 0)
-                    {
-                        // Set BOTH DefaultSpeedLimit AND SpeedLimit
-                        carLane.m_DefaultSpeedLimit = speedGameUnits;
-                        carLane.m_SpeedLimit = speedGameUnits;
-                        this.EntityManager.SetComponentData(laneEntity, carLane);
-                    }
+                    // Store the original flags EXPLICITLY
+                    var originalFlags = carLane.m_Flags;
+
+                    // ONLY modify speed fields
+                    carLane.m_DefaultSpeedLimit = speedGameUnits;
+                    carLane.m_SpeedLimit = speedGameUnits;
+                    
+                    // Ensure flags are preserved (should already be, but being explicit)
+                    carLane.m_Flags = originalFlags;
+                    
+                    this.EntityManager.SetComponentData(laneEntity, carLane);
                 }
             }
         }
