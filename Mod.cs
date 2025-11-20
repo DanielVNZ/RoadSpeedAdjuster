@@ -17,10 +17,10 @@ namespace RoadSpeedAdjuster
         {
             log.Info("OnLoad()");
 
-            // --- Apply speeds when Updated component is present ---
+            // Apply speeds at ModificationEnd
             updateSystem.UpdateAt<RoadSpeedApplySystem>(SystemUpdatePhase.ModificationEnd);
 
-            // --- InfoSection systems need to be registered at UIUpdate phase ---
+            // InfoSection systems need to be registered at UIUpdate phase
             updateSystem.UpdateAt<RoadSpeedToolUISystem>(SystemUpdatePhase.UIUpdate);
 
             log.Info("Systems registered.");

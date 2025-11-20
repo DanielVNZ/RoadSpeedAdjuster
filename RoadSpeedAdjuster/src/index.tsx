@@ -17,6 +17,7 @@ const register: ModRegistrar = (moduleRegistry: ModuleRegistry) => {
     );
 
     console.log("RoadSpeedAdjuster UI registration complete.");
+
 };
 
 export default register;

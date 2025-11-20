@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, useRef } from "react";
-import { INITIAL_SPEED, ApplySpeed } from "./bindings";
+import { INITIAL_SPEED, ApplySpeed, ResetSpeed } from "./bindings";
 import { VanillaComponentResolver } from "./VanillaComponentResolver";
 import { Button } from "./Button";
 
@@ -7,6 +7,7 @@ export const RoadSpeedInfoSection = (componentList: any) => {
   const Component: React.FC = () => {
     const [pendingSpeed, setPendingSpeed] = useState(50);
     const [isApplying, setIsApplying] = useState(false);
+    const [isResetting, setIsResetting] = useState(false);
     const dragging = useRef(false);
     const lastBindingValue = useRef(50);
 
@@ -29,13 +30,22 @@ export const RoadSpeedInfoSection = (componentList: any) => {
           const v = INITIAL_SPEED.value;
           if (typeof v === "number" && v !== lastBindingValue.current && v > 0) {
             lastBindingValue.current = v;
-            setPendingSpeed(v);
+            setPendingSpeed(v); // Update UI immediately
           }
         } catch { }
       }, 120);
 
       return () => clearInterval(interval);
     }, []);
+
+    // Immediately update pendingSpeed when INITIAL_SPEED changes (new road selected)
+    useEffect(() => {
+      const v = INITIAL_SPEED.value;
+      if (typeof v === "number" && v > 0) {
+        setPendingSpeed(v);
+        lastBindingValue.current = v;
+      }
+    }, [INITIAL_SPEED.value]);
 
     const handleSliderChange = (value: number) => {
       dragging.current = true;
@@ -48,6 +58,12 @@ export const RoadSpeedInfoSection = (componentList: any) => {
       setIsApplying(true);
       ApplySpeed(pendingSpeed);
       setTimeout(() => setIsApplying(false), 500);
+    };
+
+    const handleReset = () => {
+      setIsResetting(true);
+      ResetSpeed();
+      setTimeout(() => setIsResetting(false), 500);
     };
 
     return (
@@ -64,6 +80,7 @@ export const RoadSpeedInfoSection = (componentList: any) => {
               width: "100%",
               display: "flex",
               alignItems: "center",
+              marginLeft: "-190rem", // Shift entire right section left to give more room for label
             }}>
               <div style={{
                 flex: 1,
@@ -94,6 +111,25 @@ export const RoadSpeedInfoSection = (componentList: any) => {
                   {isApplying ? "✓" : "Apply"}
                 </Button>
               </div>
+            </div>
+          }
+        />
+
+        <InfoRow
+          left="Reset to Default"
+          right={
+            <div style={{
+              width: "65rem",
+              flexShrink: 0,
+            }}>
+              <Button
+                focusKey={FOCUS_DISABLED}
+                selected={isResetting}
+                disabled={isResetting}
+                onSelect={handleReset}
+              >
+                {isResetting ? "✓" : "Reset"}
+              </Button>
             </div>
           }
         />

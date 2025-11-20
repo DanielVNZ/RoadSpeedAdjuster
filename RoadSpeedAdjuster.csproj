@@ -23,6 +23,9 @@
 		<Reference Include="Colossal.Core">
 			<Private>false</Private>
 		</Reference>
+		<Reference Include="Newtonsoft.Json">
+			<Private>false</Private>
+		</Reference>
 		<Reference Include="Colossal.UI.Binding">
 			<Private>false</Private>
 		</Reference>
