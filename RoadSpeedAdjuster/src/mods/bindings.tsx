@@ -5,11 +5,6 @@ export const INITIAL_SPEED = bindValue<number>(
     "BINDING:INFOPANEL_ROAD_SPEED"
 );
 
-export const VISIBLE = bindValue<boolean>(
-    "RoadSpeedAdjuster",
-    "BINDING:INFOPANEL_VISIBLE"
-);
-
 // Used only when APPLY is pressed
 export const ApplySpeed = (v: number) =>
     trigger("RoadSpeedAdjuster", "TRIGGER:APPLY_SPEED", v);

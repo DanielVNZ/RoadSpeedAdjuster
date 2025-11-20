@@ -16,6 +16,11 @@ export const RoadSpeedInfoSection = (componentList: any) => {
     const Slider = resolver.Slider;
     const FOCUS_DISABLED = resolver.FOCUS_DISABLED;
 
+    // Convert km/h to mph
+    const kmhToMph = (kmh: number): number => {
+      return Math.round(kmh * 0.621371);
+    };
+
     useEffect(() => {
       const interval = setInterval(() => {
         if (dragging.current) return;
@@ -30,11 +35,10 @@ export const RoadSpeedInfoSection = (componentList: any) => {
       }, 120);
 
       return () => clearInterval(interval);
-    }, []); // Empty dependency array - only run once on mount
+    }, []);
 
     const handleSliderChange = (value: number) => {
       dragging.current = true;
-      // Round to nearest 5
       const roundedValue = Math.round(value / 5) * 5;
       setPendingSpeed(roundedValue);
       setTimeout(() => dragging.current = false, 80);
@@ -48,13 +52,11 @@ export const RoadSpeedInfoSection = (componentList: any) => {
 
     return (
       <InfoSection disableFocus={true}>
-        {/* Current Speed Limit Display */}
         <InfoRow
           left="Current Speed Limit"
-          right={`${Math.round(pendingSpeed)} km/h`}
+          right={`${Math.round(pendingSpeed)} km/h (${kmhToMph(pendingSpeed)} mph)`}
         />
 
-        {/* Adjust Speed Limit Slider */}
         <InfoRow
           left="Adjust Speed Limit"
           right={
@@ -99,6 +101,7 @@ export const RoadSpeedInfoSection = (componentList: any) => {
     );
   };
 
+  // IMPORTANT: This key must match the C# group name exactly
   componentList["RoadSpeedAdjuster.Systems.RoadSpeedToolUISystem"] = Component;
   return componentList;
 };
