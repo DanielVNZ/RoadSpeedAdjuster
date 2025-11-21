@@ -23,6 +23,9 @@ namespace RoadSpeedAdjuster.Systems
     [UpdateInGroup(typeof(SelectedInfoUISystem))]
     public partial class RoadSpeedToolUISystem : ExtendedInfoSectionBase
     {
+        private ToolSystem _toolSystem;
+        private RoadSpeedToolSystem _roadSpeedTool;
+        private DefaultToolSystem _defaultToolSystem;
         private SelectedInfoUISystem _selectedInfoUISystem;
         private Entity _selectedEntity;
         private Entity _lastCheckedEntity;
@@ -30,6 +33,8 @@ namespace RoadSpeedAdjuster.Systems
         private readonly List<float> _speeds = new();
 
         private ValueBindingHelper<float> _initialSpeedBinding;
+        private ValueBindingHelper<bool> _toolActiveBinding;
+        private ValueBindingHelper<int> _selectionCounterBinding;
 
         protected override string group => "RoadSpeedAdjuster.Systems.RoadSpeedToolUISystem";
 
@@ -42,12 +47,29 @@ namespace RoadSpeedAdjuster.Systems
 
             m_InfoUISystem.AddMiddleSection(this);
             _selectedInfoUISystem = World.GetOrCreateSystemManaged<SelectedInfoUISystem>();
+            _toolSystem = World.GetOrCreateSystemManaged<ToolSystem>();
+            _roadSpeedTool = World.GetOrCreateSystemManaged<RoadSpeedToolSystem>();
+            _defaultToolSystem = World.GetOrCreateSystemManaged<DefaultToolSystem>();
 
             _initialSpeedBinding = CreateBinding("INFOPANEL_ROAD_SPEED", 50f);
+            _toolActiveBinding = CreateBinding("TOOL_ACTIVE", false);
+            _selectionCounterBinding = CreateBinding("SELECTION_COUNTER", 0);
+            
             CreateTrigger<float>("APPLY_SPEED", HandleApplySpeed);
             CreateTrigger("RESET_SPEED", HandleResetSpeed);
+            
+            Mod.log.Info("RoadSpeedToolUI: Creating ACTIVATE_TOOL trigger with bool parameter...");
+            CreateTrigger<bool>("ACTIVATE_TOOL", HandleActivateTool);
+            Mod.log.Info("RoadSpeedToolUI: ACTIVATE_TOOL trigger created successfully");
 
+            // Initialize binding values immediately
             _initialSpeedBinding.Value = 50f;
+            _toolActiveBinding.Value = false;
+            _selectionCounterBinding.Value = 0;
+            
+            // Force an immediate update to ensure bindings are available to React
+            // This prevents "update was not called before getValueUnsafe" errors
+            RequestUpdate();
 
             Mod.log.Info("RoadSpeedToolUI: Registered as info section");
         }
@@ -58,7 +80,60 @@ namespace RoadSpeedAdjuster.Systems
             _lastCheckedEntity = Entity.Null;
             _streetEdges.Clear();
             _initialSpeedBinding.Value = 50f;
+            _toolActiveBinding.Value = false;
+            _selectionCounterBinding.Value = 0;
             visible = false;
+        }
+
+        /// <summary>
+        /// Called by RoadSpeedToolSystem when a road is selected via the tool
+        /// </summary>
+        public void OnRoadSelectedByTool(Entity aggregate, IReadOnlyList<Entity> edges)
+        {
+            Mod.log.Info($"=== OnRoadSelectedByTool START: {edges.Count} segments ===");
+            Mod.log.Info($"OnRoadSelectedByTool: Current binding value BEFORE change = {_initialSpeedBinding.Value}");
+            
+            _streetEdges.Clear();
+            _streetEdges.AddRange(edges);
+            
+            if (edges.Count > 0)
+            {
+                _selectedEntity = edges[0];
+                float speed = GetStreetSpeed(_selectedEntity);
+                
+                Mod.log.Info($"OnRoadSelectedByTool: Got speed {speed} km/h for entity {_selectedEntity.Index}");
+                
+                if (speed > 0)
+                {
+                    Mod.log.Info($"OnRoadSelectedByTool: Setting binding from {_initialSpeedBinding.Value} to {speed}");
+                    
+                    // Set the binding value
+                    _initialSpeedBinding.Value = speed;
+                    visible = true;
+                    
+                    // INCREMENT the selection counter to force React to detect a new selection
+                    // even if the speed value is the same as before
+                    _selectionCounterBinding.Value++;
+                    
+                    Mod.log.Info($"OnRoadSelectedByTool: Binding is now {_initialSpeedBinding.Value}, visible={visible}, counter={_selectionCounterBinding.Value}");
+                    Mod.log.Info($"OnRoadSelectedByTool: Calling RequestUpdate()...");
+                    
+                    // Call RequestUpdate to flush changes to React
+                    RequestUpdate();
+                    
+                    Mod.log.Info($"OnRoadSelectedByTool: RequestUpdate() complete");
+                }
+                else
+                {
+                    Mod.log.Warn($"OnRoadSelectedByTool: Speed was {speed}, not showing panel");
+                }
+            }
+            else
+            {
+                Mod.log.Warn("OnRoadSelectedByTool: No edges provided!");
+            }
+            
+            Mod.log.Info($"=== OnRoadSelectedByTool END ===");
         }
 
         protected override void OnProcess()
@@ -70,58 +145,30 @@ namespace RoadSpeedAdjuster.Systems
         {
             base.OnUpdate();
 
-            var currentSelection = _selectedInfoUISystem.selectedEntity;
-
-            if (currentSelection == _lastCheckedEntity)
+            // Update tool active state
+            bool toolActive = _roadSpeedTool != null && _roadSpeedTool.IsActive;
+            bool toolStateChanged = _toolActiveBinding.Value != toolActive;
+            
+            _toolActiveBinding.Value = toolActive;
+            
+            // If tool just became inactive, clear the panel
+            if (!toolActive && toolStateChanged)
             {
-                if (_initialSpeedBinding != null)
-                {
-                    _initialSpeedBinding.Value = _initialSpeedBinding.Value;
-                }
-                RequestUpdate();
-                return;
-            }
-
-            _lastCheckedEntity = currentSelection;
-
-            if (currentSelection == Entity.Null)
-            {
+                Mod.log.Info("RoadSpeedToolUI: Tool deactivated, clearing panel");
                 _initialSpeedBinding.Value = 50f;
+                _selectionCounterBinding.Value = 0;  // Reset counter so panel doesn't appear on next activation
                 visible = false;
+                _streetEdges.Clear();
+                _selectedEntity = Entity.Null;
                 RequestUpdate();
                 return;
             }
-
-            if (!EntityManager.HasComponent<Aggregate>(currentSelection))
+            
+            // Only request update if tool state changed (not every frame!)
+            if (toolStateChanged)
             {
-                visible = false;
                 RequestUpdate();
-                return;
             }
-
-            FindStreetRoads(currentSelection);
-
-            if (_streetEdges.Count == 0)
-            {
-                visible = false;
-                RequestUpdate();
-                return;
-            }
-
-            _selectedEntity = _streetEdges[0];
-            float speed = GetStreetSpeed(_selectedEntity);
-
-            if (speed > 0)
-            {
-                _initialSpeedBinding.Value = speed;
-                visible = true;
-            }
-            else
-            {
-                visible = false;
-            }
-
-            RequestUpdate();
         }
 
         public override void OnWriteProperties(IJsonWriter writer)
@@ -198,9 +245,30 @@ namespace RoadSpeedAdjuster.Systems
             }
 
             newSpeed = math.clamp(newSpeed, 5f, 140f);
-            float speedGameUnits = newSpeed / 1.8f;
 
             Mod.log.Info($"ApplySpeed: {newSpeed} km/h → {_streetEdges.Count} edges");
+
+            // If the tool is active, use its selection
+            if (_roadSpeedTool != null && _roadSpeedTool.IsActive && _roadSpeedTool.SelectedRoads.Count > 0)
+            {
+                // Use the tool's selection
+                Mod.log.Info("Using tool's selection for speed application");
+                _roadSpeedTool.ApplySpeedToSelection(newSpeed);
+            }
+            else
+            {
+                // Fallback: Use our own edge list (for backward compatibility)
+                Mod.log.Info("Using UI system's edge list for speed application");
+                ApplySpeedToEdges(newSpeed);
+            }
+
+            _initialSpeedBinding.Value = newSpeed;
+            Mod.log.Info("ApplySpeed complete.");
+        }
+
+        private void ApplySpeedToEdges(float newSpeed)
+        {
+            float speedGameUnits = newSpeed / 1.8f;
 
             // Get the aggregate (road) entity from the selected info system
             var aggregate = _selectedInfoUISystem.selectedEntity;
@@ -257,9 +325,6 @@ namespace RoadSpeedAdjuster.Systems
 
                 SetCarLaneSpeedsImmediate(edge, speedGameUnits);
             }
-
-            _initialSpeedBinding.Value = newSpeed;
-            Mod.log.Info("ApplySpeed complete.");
         }
 
         private void HandleResetSpeed()
@@ -367,6 +432,33 @@ namespace RoadSpeedAdjuster.Systems
 
                 EntityManager.SetComponentData(laneEntity, carLane);
             }
+        }
+
+        private void HandleActivateTool(bool enable)
+        {
+            Mod.log.Info($"HandleActivateTool: CALLED with enable={enable}");
+            
+            if (_toolSystem == null)
+            {
+                Mod.log.Error("HandleActivateTool: _toolSystem is NULL!");
+                return;
+            }
+            
+            if (_roadSpeedTool == null)
+            {
+                Mod.log.Error("HandleActivateTool: _roadSpeedTool is NULL!");
+                return;
+            }
+            
+            Mod.log.Info($"HandleActivateTool: Current tool: {_toolSystem.activeTool?.toolID ?? "none"}");
+            
+            // Use the ToggleTool method which properly handles tool activation
+            _roadSpeedTool.ToggleTool(enable);
+            
+            // Update binding to reflect actual state
+            _toolActiveBinding.Value = _roadSpeedTool.IsActive;
+            
+            Mod.log.Info($"HandleActivateTool: Complete. Tool active: {_roadSpeedTool.IsActive}, Active tool: {_toolSystem.activeTool?.toolID ?? "none"}");
         }
     }
 }

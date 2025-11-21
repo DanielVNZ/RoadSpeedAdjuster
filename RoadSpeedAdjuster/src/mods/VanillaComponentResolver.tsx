@@ -165,6 +165,12 @@ export class VanillaComponentResolver {
         return (this.cachedData[entry] = this.registryData.registry.get(entryData[0])!![entryData[1]]);
     }
 
+    // Generic method to get any component from the registry
+    public getComponent(path: string, exportName: string): any {
+        const module = this.registryData.registry.get(path);
+        return module?.[exportName];
+    }
+
     // This section defines your components and themes in a way that you can access via the singleton in your components.
     // Replace the names, props, and strings as needed for your mod.
     public get Section(): (props: PropsSection) => JSX.Element {

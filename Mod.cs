@@ -17,6 +17,9 @@ namespace RoadSpeedAdjuster
         {
             log.Info("OnLoad()");
 
+            // Register the road speed tool system
+            updateSystem.UpdateAt<RoadSpeedToolSystem>(SystemUpdatePhase.ToolUpdate);
+
             // Apply speeds at ModificationEnd
             updateSystem.UpdateAt<RoadSpeedApplySystem>(SystemUpdatePhase.ModificationEnd);
 

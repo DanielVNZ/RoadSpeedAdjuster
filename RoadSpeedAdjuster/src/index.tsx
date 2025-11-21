@@ -1,6 +1,7 @@
 ﻿import { ModRegistrar, ModuleRegistry } from "cs2/modding";
 import { VanillaComponentResolver } from "./mods/VanillaComponentResolver";
-import { RoadSpeedInfoSection } from "./mods/RoadSpeedInfoSection";
+import { RoadSpeedWindow } from "./mods/RoadSpeedWindow";
+import { RoadSpeedToolbarButton } from "./mods/RoadSpeedToolbarButton";
 
 const register: ModRegistrar = (moduleRegistry: ModuleRegistry) => {
     console.log("🚀 RoadSpeedAdjuster UI Init");
@@ -8,16 +9,13 @@ const register: ModRegistrar = (moduleRegistry: ModuleRegistry) => {
 
     VanillaComponentResolver.setRegistry(moduleRegistry);
 
-    // Extend the selectedInfoSectionComponents to add our custom section
-    // RoadSpeedInfoSection is a function that takes componentList and registers itself
-    moduleRegistry.extend(
-        "game-ui/game/components/selected-info-panel/selected-info-sections/selected-info-sections.tsx",
-        "selectedInfoSectionComponents",
-        RoadSpeedInfoSection
-    );
+    // Append our custom window to the Game component
+    moduleRegistry.append("Game", RoadSpeedWindow);
+
+    // Add our toolbar button to the top-left game UI area
+    moduleRegistry.append("GameTopLeft", RoadSpeedToolbarButton);
 
     console.log("RoadSpeedAdjuster UI registration complete.");
-
 };
 
 export default register;
