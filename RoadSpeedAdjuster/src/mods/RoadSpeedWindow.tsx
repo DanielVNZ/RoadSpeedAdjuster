@@ -128,9 +128,17 @@ export const RoadSpeedWindow = () => {
                 right: "10rem",
                 top: "10rem",
                 width: "400rem",
+                pointerEvents: "auto",  // Allow mouse events on panel
+            }}
+            onMouseEnter={() => {
+                // Prevent tool deactivation when mouse enters panel
+                console.log("[RoadSpeedWindow] Mouse entered panel - maintaining tool focus");
+            }}
+            onMouseLeave={() => {
+                console.log("[RoadSpeedWindow] Mouse left panel");
             }}
         >
-            <div style={{ padding: "16rem" }}>
+            <div style={{ padding: "16rem", pointerEvents: "auto" }}>
                 {/* Current Speed Display */}
                 <div style={{
                     display: "flex",

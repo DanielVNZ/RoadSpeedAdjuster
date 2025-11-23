@@ -320,6 +320,9 @@ namespace RoadSpeedAdjuster.Systems
                 var customSpeed = new CustomSpeed(newSpeed);
                 EntityManager.SetComponentData(targetEdge, customSpeed);
                 
+                // Track this road as having a custom speed (with the speed value)
+                SpeedDataManager.AddCustomSpeedRoad(targetEdge.Index, newSpeed);
+                
                 var verifySpeed = EntityManager.GetComponentData<CustomSpeed>(targetEdge);
                 Mod.log.Info($"  Edge {targetEdge.Index}: Set speed = {verifySpeed.m_Speed} km/h ({verifySpeed.m_SpeedMPH:F0} mph)");
 
@@ -329,6 +332,27 @@ namespace RoadSpeedAdjuster.Systems
 
         private void HandleResetSpeed()
         {
+            Mod.log.Info("HandleResetSpeed: Called from UI");
+            
+            // If the tool is active and has a selection, use its reset method
+            if (_roadSpeedTool != null && _roadSpeedTool.IsActive && _roadSpeedTool.SelectedRoads.Count > 0)
+            {
+                Mod.log.Info("Using tool's reset method for active selection");
+                _roadSpeedTool.ResetSpeedToOriginal();
+                
+                // Update UI to show default speed after reset
+                if (_streetEdges.Count > 0)
+                {
+                    float? restoredSpeed = SpeedDataManager.GetOriginalSpeed(_streetEdges[0].Index);
+                    if (restoredSpeed.HasValue)
+                    {
+                        _initialSpeedBinding.Value = restoredSpeed.Value;
+                    }
+                }
+                return;
+            }
+            
+            // Fallback to old logic for backward compatibility (when tool is not active)
             if (_selectedEntity == Entity.Null || _streetEdges.Count == 0)
             {
                 Mod.log.Warn("ResetSpeed with no valid selection/edges.");
@@ -375,6 +399,9 @@ namespace RoadSpeedAdjuster.Systems
                 {
                     EntityManager.RemoveComponent<CustomSpeed>(targetEdge);
                 }
+                
+                // Remove from custom speed tracking
+                SpeedDataManager.RemoveCustomSpeedRoad(targetEdge.Index);
             }
 
             // Remove from stored data (only once per road, not per edge)

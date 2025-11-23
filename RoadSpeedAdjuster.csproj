@@ -23,6 +23,15 @@
 		<Reference Include="Colossal.Core">
 			<Private>false</Private>
 		</Reference>
+		<Reference Include="Colossal.Localization">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="UnityEngine.UI">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Unity.TextMeshPro">
+			<Private>false</Private>
+		</Reference>
 		<Reference Include="Newtonsoft.Json">
 			<Private>false</Private>
 		</Reference>

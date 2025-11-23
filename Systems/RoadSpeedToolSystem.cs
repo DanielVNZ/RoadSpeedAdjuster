@@ -8,6 +8,7 @@ using Game.Tools;
 using Game.UI;
 using RoadSpeedAdjuster.Components;
 using System.Collections.Generic;
+using RoadSpeedAdjuster.Data;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -376,6 +377,38 @@ namespace RoadSpeedAdjuster.Systems
                     targetEdge = temp.m_Original;
                 }
 
+                // Store original speed BEFORE applying custom speed (if not already stored)
+                if (!EntityManager.HasComponent<CustomSpeed>(targetEdge))
+                {
+                    // This is the first time we're modifying this edge - store its original speed
+                    if (EntityManager.HasBuffer<SubLane>(edge))
+                    {
+                        var subLanes = EntityManager.GetBuffer<SubLane>(edge);
+                        var ignore = Game.Net.CarLaneFlags.Unsafe | Game.Net.CarLaneFlags.SideConnection;
+                        float totalSpeed = 0f;
+                        int count = 0;
+                        
+                        foreach (var subLane in subLanes)
+                        {
+                            if (!EntityManager.HasComponent<Game.Net.CarLane>(subLane.m_SubLane))
+                                continue;
+                            
+                            var carLane = EntityManager.GetComponentData<Game.Net.CarLane>(subLane.m_SubLane);
+                            if ((carLane.m_Flags & ignore) != 0)
+                                continue;
+                            
+                            totalSpeed += carLane.m_SpeedLimit * 1.8f; // Convert to km/h
+                            count++;
+                        }
+                        
+                        if (count > 0)
+                        {
+                            float originalSpeed = totalSpeed / count;
+                            SpeedDataManager.StoreOriginalSpeed(targetEdge.Index, originalSpeed);
+                        }
+                    }
+                }
+
                 if (!EntityManager.HasComponent<CustomSpeed>(targetEdge))
                 {
                     EntityManager.AddComponent<CustomSpeed>(targetEdge);
@@ -383,6 +416,9 @@ namespace RoadSpeedAdjuster.Systems
 
                 var customSpeed = new CustomSpeed(speedKmh);
                 EntityManager.SetComponentData(targetEdge, customSpeed);
+                
+                // Track this road as having a custom speed (with the speed value)
+                SpeedDataManager.AddCustomSpeedRoad(targetEdge.Index, speedKmh);
                 
                 SetCarLaneSpeedsImmediate(edge, speedGameUnits);
             }
@@ -412,6 +448,67 @@ namespace RoadSpeedAdjuster.Systems
 
                 EntityManager.SetComponentData(laneEntity, carLane);
             }
+        }
+
+        public void ResetSpeedToOriginal()
+        {
+            if (m_SelectedRoads.Count == 0)
+            {
+                Mod.log.Warn("ResetSpeedToOriginal: No roads selected");
+                return;
+            }
+
+            Mod.log.Info($"ResetSpeedToOriginal: Resetting {m_SelectedRoads.Count} segments to original speeds");
+
+            foreach (var edge in m_SelectedRoads)
+            {
+                Entity targetEdge = edge;
+                
+                if (EntityManager.HasComponent<Temp>(edge))
+                {
+                    var temp = EntityManager.GetComponentData<Temp>(edge);
+                    targetEdge = temp.m_Original;
+                }
+
+                // Get the original speed
+                float? originalSpeed = SpeedDataManager.GetOriginalSpeed(targetEdge.Index);
+                if (!originalSpeed.HasValue)
+                {
+                    Mod.log.Warn($"ResetSpeedToOriginal: No original speed found for edge {targetEdge.Index}");
+                    continue;
+                }
+
+                float speedGameUnits = originalSpeed.Value / 1.8f;
+                
+                // Restore speed to all lanes
+                if (EntityManager.HasBuffer<SubLane>(edge))
+                {
+                    var subLanes = EntityManager.GetBuffer<SubLane>(edge);
+                    foreach (var subLane in subLanes)
+                    {
+                        if (!EntityManager.HasComponent<Game.Net.CarLane>(subLane.m_SubLane))
+                            continue;
+                        
+                        var carLane = EntityManager.GetComponentData<Game.Net.CarLane>(subLane.m_SubLane);
+                        carLane.m_SpeedLimit = speedGameUnits;
+                        EntityManager.SetComponentData(subLane.m_SubLane, carLane);
+                    }
+                }
+
+                // Remove CustomSpeed component
+                if (EntityManager.HasComponent<CustomSpeed>(targetEdge))
+                {
+                    EntityManager.RemoveComponent<CustomSpeed>(targetEdge);
+                }
+
+                // Remove from tracking
+                SpeedDataManager.RemoveCustomSpeedRoad(targetEdge.Index);
+                SpeedDataManager.RemoveOriginalSpeed(targetEdge.Index);
+                
+                Mod.log.Info($"Reset edge {targetEdge.Index} to {originalSpeed.Value} km/h");
+            }
+
+            Mod.log.Info("ResetSpeedToOriginal: Complete");
         }
 
         public void DeactivateTool()
