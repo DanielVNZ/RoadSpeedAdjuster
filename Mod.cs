@@ -40,6 +40,9 @@ namespace RoadSpeedAdjuster
 
             // Apply speeds at ModificationEnd
             updateSystem.UpdateAt<RoadSpeedApplySystem>(SystemUpdatePhase.ModificationEnd);
+            
+            // Clear custom speeds system (handles clearing from settings)
+            updateSystem.UpdateAt<ClearCustomSpeedsSystem>(SystemUpdatePhase.ModificationEnd);
 
             // InfoSection systems need to be registered at UIUpdate phase
             updateSystem.UpdateAt<RoadSpeedToolUISystem>(SystemUpdatePhase.UIUpdate);

@@ -108,6 +108,7 @@ namespace RoadSpeedAdjuster.Systems
 
             private void SetSpeedSubLane(Entity edgeEntity, Entity laneEntity, float speedGameUnits)
             {
+                // Set speed for CarLane (roads)
                 if (this.EntityManager.HasComponent<CarLane>(laneEntity))
                 {
                     var carLane = this.EntityManager.GetComponentData<CarLane>(laneEntity);
@@ -123,6 +124,15 @@ namespace RoadSpeedAdjuster.Systems
                     carLane.m_Flags = originalFlags;
                     
                     this.EntityManager.SetComponentData(laneEntity, carLane);
+                }
+                // Set speed for TrackLane (trains, trams, subways)
+                else if (this.EntityManager.HasComponent<Game.Net.TrackLane>(laneEntity))
+                {
+                    var trackLane = this.EntityManager.GetComponentData<Game.Net.TrackLane>(laneEntity);
+                    
+                    trackLane.m_SpeedLimit = speedGameUnits;
+                    
+                    this.EntityManager.SetComponentData(laneEntity, trackLane);
                 }
             }
         }

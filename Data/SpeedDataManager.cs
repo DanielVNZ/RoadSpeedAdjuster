@@ -16,7 +16,7 @@ namespace RoadSpeedAdjuster.Data
             if (!_originalSpeeds.ContainsKey(entityIndex))
             {
                 _originalSpeeds[entityIndex] = speedKmh;
-                Mod.log.Info($"Stored original speed for entity {entityIndex}: {speedKmh} km/h");
+                //Mod.log.Info($"Stored original speed for entity {entityIndex}: {speedKmh} km/h");
             }
         }
 
@@ -33,7 +33,7 @@ namespace RoadSpeedAdjuster.Data
         {
             if (_originalSpeeds.Remove(entityIndex))
             {
-                Mod.log.Info($"Removed original speed for entity {entityIndex}");
+                //Mod.log.Info($"Removed original speed for entity {entityIndex}");
             }
         }
 
@@ -43,7 +43,7 @@ namespace RoadSpeedAdjuster.Data
         public static void AddCustomSpeedRoad(int entityIndex, float speedKmh)
         {
             _customSpeedRoads[entityIndex] = speedKmh;
-            Mod.log.Info($"Added custom speed road: {entityIndex} = {speedKmh} km/h");
+            //Mod.log.Info($"Added custom speed road: {entityIndex} = {speedKmh} km/h");
         }
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace RoadSpeedAdjuster.Data
         {
             if (_customSpeedRoads.Remove(entityIndex))
             {
-                Mod.log.Info($"Removed custom speed road: {entityIndex}");
+                //Mod.log.Info($"Removed custom speed road: {entityIndex}");
             }
         }
 
@@ -100,7 +100,7 @@ namespace RoadSpeedAdjuster.Data
         {
             _originalSpeeds.Clear();
             _customSpeedRoads.Clear();
-            Mod.log.Info("Cleared all speed data");
+            //Mod.log.Info("Cleared all speed data");
         }
     }
 }

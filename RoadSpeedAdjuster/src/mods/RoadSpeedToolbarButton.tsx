@@ -3,6 +3,7 @@ import { Button, Tooltip } from "cs2/ui";
 import { ActivateTool, TOOL_ACTIVE } from "./bindings";
 import classNames from "classnames";
 import styles from "./RoadSpeedToolbarButton.module.scss";
+import iconSvg from "../images/icon.svg";
 
 export const RoadSpeedToolbarButton = () => {
     // Safely access binding value with error handling
@@ -16,7 +17,6 @@ export const RoadSpeedToolbarButton = () => {
     }
 
     const handleClick = () => {
-        console.log("Road Speed Tool button clicked - activating tool");
         ActivateTool();
     };
 
@@ -27,10 +27,13 @@ export const RoadSpeedToolbarButton = () => {
                 className={classNames({ [styles.selected]: toolActive }, styles.toggle)}
                 onSelect={handleClick}
             >
-                <img style={{ 
-                    maskImage: `url(coui://ui-mods/images/road-speed-icon.svg)`,
-                    WebkitMaskImage: `url(coui://ui-mods/images/road-speed-icon.svg)`
-                }} />
+                <img 
+                    src={iconSvg}
+                    style={{ 
+                        width: "100%",
+                        height: "100%"
+                    }} 
+                />
             </Button>
         </Tooltip>
     );

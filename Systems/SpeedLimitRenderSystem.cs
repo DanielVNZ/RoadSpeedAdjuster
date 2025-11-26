@@ -4,6 +4,8 @@ using Game.Net;
 using Game.Rendering;
 using Game.SceneFlow;
 using Game.Settings;
+using Game.City;
+using Game.UI;
 using RoadSpeedAdjuster.Components;
 using RoadSpeedAdjuster.Extensions;
 using System.Collections.Generic;
@@ -35,6 +37,7 @@ namespace RoadSpeedAdjuster.Systems
         private RenderingSystem m_RenderingSystem;
         private OverlayRenderSystem m_OverlayRenderSystem;
         private RoadSpeedToolSystem m_RoadSpeedToolSystem;
+        private CityConfigurationSystem m_CityConfigurationSystem;
         
         private EntityQuery m_CustomSpeedQuery;
         
@@ -47,8 +50,11 @@ namespace RoadSpeedAdjuster.Systems
         // Rendering
         private int m_FaceColorID;
         
-        // Track last known unit system to detect changes
-        private InterfaceSettings.UnitSystem? m_LastUnitSystem = null;
+        // Track last known theme to detect changes
+        private string m_LastTheme = null;
+        
+        // Track last known setting to detect user changes
+        private Setting.SpeedUnit m_LastUnitPreference = Setting.SpeedUnit.Auto;
 
         [Preserve]
         protected override void OnCreate()
@@ -58,9 +64,13 @@ namespace RoadSpeedAdjuster.Systems
             m_RenderingSystem = World.GetOrCreateSystemManaged<RenderingSystem>();
             m_OverlayRenderSystem = World.GetOrCreateSystemManaged<OverlayRenderSystem>();
             m_RoadSpeedToolSystem = World.GetOrCreateSystemManaged<RoadSpeedToolSystem>();
+            m_CityConfigurationSystem = World.GetOrCreateSystemManaged<CityConfigurationSystem>();
             
             // Get settings
             m_Settings = Mod.m_Setting;
+            
+            // Initialize last known unit preference
+            m_LastUnitPreference = m_Settings?.SpeedUnitPreference ?? Setting.SpeedUnit.Auto;
             
             // Create query for roads with custom speeds
             m_CustomSpeedQuery = GetEntityQuery(new EntityQueryDesc
@@ -77,8 +87,6 @@ namespace RoadSpeedAdjuster.Systems
             
             // Hook into render pipeline
             RenderPipelineManager.beginContextRendering += Render;
-            
-            Mod.log.Info("SpeedLimitRenderSystem created - using direct mesh rendering");
         }
 
         [Preserve]
@@ -105,26 +113,40 @@ namespace RoadSpeedAdjuster.Systems
                     Object.Destroy(meshInfo.Material);
             }
             m_TextMeshCache.Clear();
-            Mod.log.Info("Text mesh cache cleared");
         }
 
         [Preserve]
         protected override void OnUpdate()
         {
-            // Check if unit system changed (poll every frame when tool is active)
+            // Check if theme changed (only when tool is active to avoid spam)
             if (m_RoadSpeedToolSystem != null && m_RoadSpeedToolSystem.IsActive)
             {
-                var currentUnitSystem = GetCurrentUnitSystem();
+                string currentTheme = GetCurrentMapTheme();
                 
-                if (m_LastUnitSystem.HasValue && m_LastUnitSystem.Value != currentUnitSystem)
+                if (m_LastTheme != null && m_LastTheme != currentTheme)
                 {
-                    Mod.log.Info($"Unit system changed from {m_LastUnitSystem.Value} to {currentUnitSystem} - clearing text mesh cache");
+                    //Mod.log.Info($"Map theme changed from '{m_LastTheme}' to '{currentTheme}' - clearing text mesh cache");
                     ClearTextMeshCache();
-                    m_LastUnitSystem = currentUnitSystem;
+                    m_LastTheme = currentTheme;
                 }
-                else if (!m_LastUnitSystem.HasValue)
+                else if (m_LastTheme == null)
                 {
-                    m_LastUnitSystem = currentUnitSystem;
+                    m_LastTheme = currentTheme;
+                    bool isEU = IsMapEuropean();
+                    //Mod.log.Info($"Map theme detected: '{currentTheme}' ({(isEU ? "European/Metric" : "North American/Imperial")})");
+                }
+            }
+            
+            // Check if user changed the unit preference setting
+            if (m_Settings != null)
+            {
+                Setting.SpeedUnit currentPreference = m_Settings.SpeedUnitPreference;
+                
+                if (currentPreference != m_LastUnitPreference)
+                {
+                    //Mod.log.Info($"Unit preference changed from '{m_LastUnitPreference}' to '{currentPreference}' - clearing text mesh cache");
+                    ClearTextMeshCache();
+                    m_LastUnitPreference = currentPreference;
                 }
             }
         }
@@ -209,12 +231,11 @@ namespace RoadSpeedAdjuster.Systems
         {
             try
             {
-                // Detect if using metric or imperial from game settings
-                var currentUnitSystem = GetCurrentUnitSystem();
-                bool isMetric = currentUnitSystem == InterfaceSettings.UnitSystem.Metric;
+                // Detect if map is using EU or NA theme
+                bool isEUMap = IsMapEuropean();
                 
                 // Determine which unit to show based on user preference
-                bool showMetric = m_Settings?.ShouldShowMetric(isMetric) ?? isMetric;
+                bool showMetric = m_Settings?.ShouldShowMetric(isEUMap) ?? isEUMap;
                 
                 // Get the shared TextMeshPro component from OverlayRenderSystem
                 TextMeshPro textMesh = m_OverlayRenderSystem.GetTextMesh();
@@ -238,7 +259,8 @@ namespace RoadSpeedAdjuster.Systems
                 }
                 else
                 {
-                    // Convert to mph
+                    // Convert to mph - use Math.Round for consistency with UI
+                    // This ensures that km/h values stored from mph selections display correctly
                     int speedMph = Mathf.RoundToInt(speedKmh * 0.621371f);
                     speedText = $"{speedMph} mph";
                 }
@@ -247,7 +269,7 @@ namespace RoadSpeedAdjuster.Systems
                 
                 if (textInfo.meshInfo.Length == 0)
                 {
-                    Mod.log.Warn($"No mesh info generated for speed {speedKmh}");
+                    //Mod.log.Warn($"No mesh info generated for speed {speedKmh}");
                     return default;
                 }
 
@@ -256,7 +278,7 @@ namespace RoadSpeedAdjuster.Systems
                 
                 if (tmpMeshInfo.vertexCount == 0)
                 {
-                    Mod.log.Warn($"No vertices generated for speed {speedKmh}");
+                    //Mod.log.Warn($"No vertices generated for speed {speedKmh}");
                     return default;
                 }
 
@@ -285,8 +307,6 @@ namespace RoadSpeedAdjuster.Systems
                 // Preserve correct SDF font rendering setup
                 m_OverlayRenderSystem.CopyFontAtlasParameters(tmpMeshInfo.material, material);
 
-                Mod.log.Info($"Created text mesh for speed {speedKmh}: {tmpMeshInfo.vertexCount} vertices (showing {(showMetric ? "metric" : "imperial")} primary, unit system: {currentUnitSystem})");
-
                 return new TextMeshInfo
                 {
                     Mesh = mesh,
@@ -302,28 +322,39 @@ namespace RoadSpeedAdjuster.Systems
         }
 
         /// <summary>
-        /// Get the current unit system from game settings
+        /// Get the current map's theme name
         /// </summary>
-        private InterfaceSettings.UnitSystem GetCurrentUnitSystem()
+        private string GetCurrentMapTheme()
         {
             try
             {
-                // Use SharedSettings.instance.userInterface (as shown in OptionsUISystem)
-                var interfaceSettings = SharedSettings.instance?.userInterface;
-                
-                if (interfaceSettings != null)
+                if (m_CityConfigurationSystem?.defaultTheme != Entity.Null)
                 {
-                    return interfaceSettings.unitSystem;
+                    var prefabSystem = World.GetOrCreateSystemManaged<Game.Prefabs.PrefabSystem>();
+                    var theme = prefabSystem.GetPrefab<Game.Prefabs.ThemePrefab>(m_CityConfigurationSystem.defaultTheme);
+                    return theme?.name ?? "Unknown";
                 }
                 
-                Mod.log.Warn("SharedSettings.instance.userInterface is null, defaulting to Metric");
-                return InterfaceSettings.UnitSystem.Metric;
+                return "Unknown";
             }
             catch (System.Exception ex)
             {
-                Mod.log.Error($"Exception in GetCurrentUnitSystem: {ex}");
-                return InterfaceSettings.UnitSystem.Metric;
+                Mod.log.Warn($"Failed to get map theme: {ex.Message}");
+                return "Unknown";
             }
+        }
+
+        /// <summary>
+        /// Determine if the current map is using a European theme
+        /// </summary>
+        private bool IsMapEuropean()
+        {
+            string theme = GetCurrentMapTheme();
+            
+            // Game uses exactly "North American" or "European" as theme names
+            bool isNA = theme.Equals("North American", System.StringComparison.Ordinal);
+            
+            return !isNA; // If not "North American", assume European (default)
         }
 
         [Preserve]

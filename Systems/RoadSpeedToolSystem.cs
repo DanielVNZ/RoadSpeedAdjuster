@@ -47,35 +47,35 @@ namespace RoadSpeedAdjuster.Systems
         /// </summary>
         public void ToggleTool(bool enable)
         {
-            Mod.log.Info($"ToggleTool called: enable={enable}, current tool={m_ToolSystem?.activeTool?.toolID ?? "null"}");
+            //Mod.log.Info($"ToggleTool called: enable={enable}, current tool={m_ToolSystem?.activeTool?.toolID ?? "null"}");
             
             // If trying to enable and we're not active, activate
             if (enable && m_ToolSystem.activeTool != this)
             {
                 m_ToolSystem.selected = Entity.Null;
                 m_ToolSystem.activeTool = this;
-                Mod.log.Info("RoadSpeedToolSystem: Tool activated via ToggleTool");
+                //Mod.log.Info("RoadSpeedToolSystem: Tool activated via ToggleTool");
             }
             // If trying to enable but we're already active, treat it as a toggle-off
             else if (enable && m_ToolSystem.activeTool == this)
             {
                 m_ToolSystem.selected = Entity.Null;
                 m_ToolSystem.activeTool = m_DefaultToolSystem;
-                Mod.log.Info("RoadSpeedToolSystem: Tool toggled off (was already active)");
+                //Mod.log.Info("RoadSpeedToolSystem: Tool toggled off (was already active)");
             }
             // If trying to disable and we're active, deactivate
             else if (!enable && m_ToolSystem.activeTool == this)
             {
                 m_ToolSystem.selected = Entity.Null;
                 m_ToolSystem.activeTool = m_DefaultToolSystem;
-                Mod.log.Info("RoadSpeedToolSystem: Tool deactivated via ToggleTool");
+                //Mod.log.Info("RoadSpeedToolSystem: Tool deactivated via ToggleTool");
             }
         }
 
         [Preserve]
         protected override void OnCreate()
         {
-            Mod.log.Info("RoadSpeedToolSystem: OnCreate - start");
+            //Mod.log.Info("RoadSpeedToolSystem: OnCreate - start");
             
             // Set Enabled to false per documentation
             Enabled = false;
@@ -100,7 +100,7 @@ namespace RoadSpeedAdjuster.Systems
             // Call base.OnCreate() - this initializes applyAction for us!
             base.OnCreate();
             
-            Mod.log.Info("RoadSpeedToolSystem: OnCreate complete - applyAction ready");
+            //Mod.log.Info("RoadSpeedToolSystem: OnCreate complete - applyAction ready");
         }
 
         [Preserve]
@@ -113,9 +113,9 @@ namespace RoadSpeedAdjuster.Systems
             
             // Enable applyAction - exactly like Better Bulldozer mod
             applyAction.shouldBeEnabled = true;
-            Mod.log.Info($"Set applyAction.shouldBeEnabled=true (enabled={applyAction.enabled})");
+            //Mod.log.Info($"Set applyAction.shouldBeEnabled=true (enabled={applyAction.enabled})");
             
-            Mod.log.Info("Tool started running");
+            //Mod.log.Info("Tool started running");
         }
 
         protected override void OnStopRunning()
@@ -124,11 +124,11 @@ namespace RoadSpeedAdjuster.Systems
             
             // Log WHY the tool is stopping
             var stackTrace = new System.Diagnostics.StackTrace(true);
-            Mod.log.Info($"OnStopRunning called! Stack trace:\n{stackTrace.ToString()}");
+            //Mod.log.Info($"OnStopRunning called! Stack trace:\n{stackTrace.ToString()}");
             
             // Disable applyAction - exactly like Better Bulldozer mod
             applyAction.shouldBeEnabled = false;
-            Mod.log.Info("Set applyAction.shouldBeEnabled=false");
+            //Mod.log.Info("Set applyAction.shouldBeEnabled=false");
             
             // Remove all highlights when tool deactivates
             RemoveAllHighlights();
@@ -139,16 +139,16 @@ namespace RoadSpeedAdjuster.Systems
             m_IsDragging = false;
             m_HoverEntity = Entity.Null;
             
-            Mod.log.Info("Tool stopped running");
+            //Mod.log.Info("Tool stopped running");
         }
 
         public override void InitializeRaycast()
         {
             base.InitializeRaycast();
             
-            // Set up raycast to detect roads
+            // Set up raycast to detect roads, train tracks, tram tracks, subway tracks, and waterways
             m_ToolRaycastSystem.typeMask = TypeMask.Net;
-            m_ToolRaycastSystem.netLayerMask = Layer.Road;
+            m_ToolRaycastSystem.netLayerMask = Layer.Road | Layer.TrainTrack | Layer.TramTrack | Layer.SubwayTrack | Layer.Waterway;
             m_ToolRaycastSystem.raycastFlags = RaycastFlags.SubElements | RaycastFlags.Markers;
         }
 
@@ -254,7 +254,7 @@ namespace RoadSpeedAdjuster.Systems
                 }
                 highlighted.Dispose();
                 
-                Mod.log.Info("Mouse pressed - starting selection");
+                //Mod.log.Info("Mouse pressed - starting selection");
                 
                 if (hasHit && currentPoint.m_OriginalEntity != Entity.Null && EntityManager.HasComponent<Edge>(currentPoint.m_OriginalEntity))
                 {
@@ -264,7 +264,7 @@ namespace RoadSpeedAdjuster.Systems
                     EntityManager.AddComponent<Highlighted>(currentPoint.m_OriginalEntity);
                     EntityManager.AddComponent<BatchesUpdated>(currentPoint.m_OriginalEntity);
                     
-                    Mod.log.Info($"Initial segment added: {currentPoint.m_OriginalEntity.Index}");
+                    //Mod.log.Info($"Initial segment added: {currentPoint.m_OriginalEntity.Index}");
                 }
             }
 
@@ -283,7 +283,7 @@ namespace RoadSpeedAdjuster.Systems
                         }
                         EntityManager.AddComponent<BatchesUpdated>(currentPoint.m_OriginalEntity);
                         
-                        Mod.log.Info($"Added segment during drag: {currentPoint.m_OriginalEntity.Index} (total: {m_TempSelection.Count})");
+                        //Mod.log.Info($"Added segment during drag: {currentPoint.m_OriginalEntity.Index} (total: {m_TempSelection.Count})");
                     }
                 }
             }
@@ -292,16 +292,16 @@ namespace RoadSpeedAdjuster.Systems
             if (m_IsDragging && applyAction.WasReleasedThisFrame())
             {
                 m_IsDragging = false;
-                Mod.log.Info($"Mouse released - finalizing selection of {m_TempSelection.Count} segments");
+                //Mod.log.Info($"Mouse released - finalizing selection of {m_TempSelection.Count} segments");
                 FinalizeSelection();
                 
-                Mod.log.Info("Selection complete - tool STAYING ACTIVE");
+                //Mod.log.Info("Selection complete - tool STAYING ACTIVE");
             }
 
             // Cancel with ESC
             if (cancelAction != null && cancelAction.WasPressedThisFrame())
             {
-                Mod.log.Info("ESC pressed - deactivating tool");
+                //Mod.log.Info("ESC pressed - deactivating tool");
                 m_ToolSystem.activeTool = m_DefaultToolSystem;
                 return inputDeps;
             }
@@ -322,7 +322,7 @@ namespace RoadSpeedAdjuster.Systems
             m_SelectedRoads.Clear();
             m_SelectedRoads.AddRange(m_TempSelection);
             
-            Mod.log.Info($"=== FinalizeSelection START: {m_SelectedRoads.Count} segments ===");
+            //Mod.log.Info($"=== FinalizeSelection START: {m_SelectedRoads.Count} segments ===");
             
             if (m_UISystem != null && m_SelectedRoads.Count > 0)
             {
@@ -332,23 +332,23 @@ namespace RoadSpeedAdjuster.Systems
                     aggregate = EntityManager.GetComponentData<Aggregated>(m_SelectedRoads[0]).m_Aggregate;
                 }
                 
-                Mod.log.Info($"FinalizeSelection: Calling OnRoadSelectedByTool with aggregate={aggregate.Index}");
+                //Mod.log.Info($"FinalizeSelection: Calling OnRoadSelectedByTool with aggregate={aggregate.Index}");
                 m_UISystem.OnRoadSelectedByTool(aggregate, m_SelectedRoads);
-                Mod.log.Info($"FinalizeSelection: OnRoadSelectedByTool returned");
+                //Mod.log.Info($"FinalizeSelection: OnRoadSelectedByTool returned");
             }
             else if (m_SelectedRoads.Count == 0)
             {
-                Mod.log.Info("No segments were selected - clearing any existing selection");
+                //Mod.log.Info("No segments were selected - clearing any existing selection");
                 // If user clicked on empty space, clear the selection and remove highlights
                 RemoveAllHighlights();
             }
             
-            Mod.log.Info($"=== FinalizeSelection END ===");
+            //Mod.log.Info($"=== FinalizeSelection END ===");
         }
 
         public void ClearSelection()
         {
-            Mod.log.Info("ClearSelection: Removing highlights and clearing selection");
+            //Mod.log.Info("ClearSelection: Removing highlights and clearing selection");
             RemoveAllHighlights();
             m_SelectedRoads.Clear();
             m_TempSelection.Clear();
@@ -359,11 +359,11 @@ namespace RoadSpeedAdjuster.Systems
         {
             if (m_SelectedRoads.Count == 0)
             {
-                Mod.log.Warn("ApplySpeedToSelection: No roads selected");
+                //Mod.log.Warn("ApplySpeedToSelection: No roads selected");
                 return;
             }
 
-            Mod.log.Info($"ApplySpeedToSelection: Applying {speedKmh} km/h to {m_SelectedRoads.Count} segments");
+            //Mod.log.Info($"ApplySpeedToSelection: Applying {speedKmh} km/h to {m_SelectedRoads.Count} segments");
 
             float speedGameUnits = speedKmh / 1.8f;
 
@@ -377,10 +377,13 @@ namespace RoadSpeedAdjuster.Systems
                     targetEdge = temp.m_Original;
                 }
 
-                // Store original speed BEFORE applying custom speed (if not already stored)
-                if (!EntityManager.HasComponent<CustomSpeed>(targetEdge))
+                // Get original speed (only if not already stored)
+                var existingEntry = PersistentSpeedStorage.GetRoadSpeed(targetEdge.Index);
+                float originalSpeed = 0f;
+                
+                if (existingEntry == null)
                 {
-                    // This is the first time we're modifying this edge - store its original speed
+                    // First time modifying this edge - get and store original speed
                     if (EntityManager.HasBuffer<SubLane>(edge))
                     {
                         var subLanes = EntityManager.GetBuffer<SubLane>(edge);
@@ -390,25 +393,42 @@ namespace RoadSpeedAdjuster.Systems
                         
                         foreach (var subLane in subLanes)
                         {
-                            if (!EntityManager.HasComponent<Game.Net.CarLane>(subLane.m_SubLane))
-                                continue;
-                            
-                            var carLane = EntityManager.GetComponentData<Game.Net.CarLane>(subLane.m_SubLane);
-                            if ((carLane.m_Flags & ignore) != 0)
-                                continue;
-                            
-                            totalSpeed += carLane.m_SpeedLimit * 1.8f; // Convert to km/h
-                            count++;
+                            // Check for CarLane (roads)
+                            if (EntityManager.HasComponent<Game.Net.CarLane>(subLane.m_SubLane))
+                            {
+                                var carLane = EntityManager.GetComponentData<Game.Net.CarLane>(subLane.m_SubLane);
+                                if ((carLane.m_Flags & ignore) != 0)
+                                    continue;
+                                
+                                totalSpeed += carLane.m_SpeedLimit * 1.8f; // Convert to km/h
+                                count++;
+                            }
+                            // Check for TrackLane (trains, trams, subways)
+                            else if (EntityManager.HasComponent<Game.Net.TrackLane>(subLane.m_SubLane))
+                            {
+                                var trackLane = EntityManager.GetComponentData<Game.Net.TrackLane>(subLane.m_SubLane);
+                                totalSpeed += trackLane.m_SpeedLimit * 1.8f; // Convert to km/h
+                                count++;
+                            }
                         }
                         
                         if (count > 0)
                         {
-                            float originalSpeed = totalSpeed / count;
-                            SpeedDataManager.StoreOriginalSpeed(targetEdge.Index, originalSpeed);
+                            originalSpeed = totalSpeed / count;
+                            //Mod.log.Info($"Stored original speed for entity {targetEdge.Index}: {originalSpeed:F1} km/h");
                         }
                     }
                 }
+                else
+                {
+                    // Use previously stored default speed
+                    originalSpeed = existingEntry.DefaultSpeed;
+                }
 
+                // Store to persistent JSON (default speed + current speed)
+                PersistentSpeedStorage.StoreRoadSpeed(targetEdge.Index, originalSpeed, speedKmh);
+
+                // Add/Update CustomSpeed component
                 if (!EntityManager.HasComponent<CustomSpeed>(targetEdge))
                 {
                     EntityManager.AddComponent<CustomSpeed>(targetEdge);
@@ -417,13 +437,10 @@ namespace RoadSpeedAdjuster.Systems
                 var customSpeed = new CustomSpeed(speedKmh);
                 EntityManager.SetComponentData(targetEdge, customSpeed);
                 
-                // Track this road as having a custom speed (with the speed value)
-                SpeedDataManager.AddCustomSpeedRoad(targetEdge.Index, speedKmh);
-                
                 SetCarLaneSpeedsImmediate(edge, speedGameUnits);
             }
 
-            Mod.log.Info("ApplySpeedToSelection: Complete");
+            //Mod.log.Info("ApplySpeedToSelection: Complete");
         }
 
         private void SetCarLaneSpeedsImmediate(Entity edge, float speedGameUnits)
@@ -437,16 +454,24 @@ namespace RoadSpeedAdjuster.Systems
             {
                 var laneEntity = subLanes[i].m_SubLane;
 
-                if (!EntityManager.HasComponent<CarLane>(laneEntity))
-                    continue;
+                // Set speed for CarLane (roads)
+                if (EntityManager.HasComponent<CarLane>(laneEntity))
+                {
+                    var carLane = EntityManager.GetComponentData<CarLane>(laneEntity);
+                    var originalFlags = carLane.m_Flags;
 
-                var carLane = EntityManager.GetComponentData<CarLane>(laneEntity);
-                var originalFlags = carLane.m_Flags;
+                    carLane.m_SpeedLimit = speedGameUnits;
+                    carLane.m_Flags = originalFlags;
 
-                carLane.m_SpeedLimit = speedGameUnits;
-                carLane.m_Flags = originalFlags;
-
-                EntityManager.SetComponentData(laneEntity, carLane);
+                    EntityManager.SetComponentData(laneEntity, carLane);
+                }
+                // Set speed for TrackLane (trains, trams, subways)
+                else if (EntityManager.HasComponent<Game.Net.TrackLane>(laneEntity))
+                {
+                    var trackLane = EntityManager.GetComponentData<Game.Net.TrackLane>(laneEntity);
+                    trackLane.m_SpeedLimit = speedGameUnits;
+                    EntityManager.SetComponentData(laneEntity, trackLane);
+                }
             }
         }
 
@@ -454,11 +479,11 @@ namespace RoadSpeedAdjuster.Systems
         {
             if (m_SelectedRoads.Count == 0)
             {
-                Mod.log.Warn("ResetSpeedToOriginal: No roads selected");
+                //Mod.log.Warn("ResetSpeedToOriginal: No roads selected");
                 return;
             }
 
-            Mod.log.Info($"ResetSpeedToOriginal: Resetting {m_SelectedRoads.Count} segments to original speeds");
+            //Mod.log.Info($"ResetSpeedToOriginal: Resetting {m_SelectedRoads.Count} segments to original speeds");
 
             foreach (var edge in m_SelectedRoads)
             {
@@ -470,11 +495,11 @@ namespace RoadSpeedAdjuster.Systems
                     targetEdge = temp.m_Original;
                 }
 
-                // Get the original speed
-                float? originalSpeed = SpeedDataManager.GetOriginalSpeed(targetEdge.Index);
+                // Get the original speed from persistent storage
+                float? originalSpeed = PersistentSpeedStorage.GetDefaultSpeed(targetEdge.Index);
                 if (!originalSpeed.HasValue)
                 {
-                    Mod.log.Warn($"ResetSpeedToOriginal: No original speed found for edge {targetEdge.Index}");
+                    //Mod.log.Warn($"ResetSpeedToOriginal: No original speed found for edge {targetEdge.Index}");
                     continue;
                 }
 
@@ -486,12 +511,20 @@ namespace RoadSpeedAdjuster.Systems
                     var subLanes = EntityManager.GetBuffer<SubLane>(edge);
                     foreach (var subLane in subLanes)
                     {
-                        if (!EntityManager.HasComponent<Game.Net.CarLane>(subLane.m_SubLane))
-                            continue;
-                        
-                        var carLane = EntityManager.GetComponentData<Game.Net.CarLane>(subLane.m_SubLane);
-                        carLane.m_SpeedLimit = speedGameUnits;
-                        EntityManager.SetComponentData(subLane.m_SubLane, carLane);
+                        // Restore speed for CarLane (roads)
+                        if (EntityManager.HasComponent<Game.Net.CarLane>(subLane.m_SubLane))
+                        {
+                            var carLane = EntityManager.GetComponentData<Game.Net.CarLane>(subLane.m_SubLane);
+                            carLane.m_SpeedLimit = speedGameUnits;
+                            EntityManager.SetComponentData(subLane.m_SubLane, carLane);
+                        }
+                        // Restore speed for TrackLane (trains, trams, subways)
+                        else if (EntityManager.HasComponent<Game.Net.TrackLane>(subLane.m_SubLane))
+                        {
+                            var trackLane = EntityManager.GetComponentData<Game.Net.TrackLane>(subLane.m_SubLane);
+                            trackLane.m_SpeedLimit = speedGameUnits;
+                            EntityManager.SetComponentData(subLane.m_SubLane, trackLane);
+                        }
                     }
                 }
 
@@ -501,14 +534,13 @@ namespace RoadSpeedAdjuster.Systems
                     EntityManager.RemoveComponent<CustomSpeed>(targetEdge);
                 }
 
-                // Remove from tracking
-                SpeedDataManager.RemoveCustomSpeedRoad(targetEdge.Index);
-                SpeedDataManager.RemoveOriginalSpeed(targetEdge.Index);
+                // Remove from persistent storage
+                PersistentSpeedStorage.RemoveRoad(targetEdge.Index);
                 
-                Mod.log.Info($"Reset edge {targetEdge.Index} to {originalSpeed.Value} km/h");
+                //Mod.log.Info($"Reset edge {targetEdge.Index} to {originalSpeed.Value:F1} km/h");
             }
 
-            Mod.log.Info("ResetSpeedToOriginal: Complete");
+            //Mod.log.Info("ResetSpeedToOriginal: Complete");
         }
 
         public void DeactivateTool()
@@ -518,6 +550,96 @@ namespace RoadSpeedAdjuster.Systems
                 m_ToolSystem.activeTool = m_DefaultToolSystem;
                 ClearSelection();
             }
+        }
+
+        /// <summary>
+        /// Called by Setting.cs to clear all custom speeds and update the UI
+        /// </summary>
+        public void ClearAllCustomSpeedsAndUI()
+        {
+            // Get all roads with custom speeds from persistent storage
+            var persistentRoads = PersistentSpeedStorage.GetAllRoads();
+            
+            if (persistentRoads == null || persistentRoads.Count == 0)
+            {
+                Mod.log.Info("No custom speed roads to clear");
+                return;
+            }
+
+            Mod.log.Info($"Clearing {persistentRoads.Count} roads with custom speeds");
+
+            // Build a list of valid entities to reset
+            var entitiesToReset = new List<Entity>();
+            
+            foreach (var roadEntry in persistentRoads)
+            {
+                var entity = new Entity { Index = roadEntry.Key, Version = 1 };
+                
+                if (EntityManager.Exists(entity) && EntityManager.HasComponent<CustomSpeed>(entity))
+                {
+                    entitiesToReset.Add(entity);
+                }
+            }
+
+            if (entitiesToReset.Count == 0)
+            {
+                Mod.log.Info("No valid entities found to reset");
+                PersistentSpeedStorage.Clear();
+                return;
+            }
+
+            Mod.log.Info($"Resetting {entitiesToReset.Count} road entities");
+
+            // Reset each entity
+            foreach (var entity in entitiesToReset)
+            {
+                // Get original speed from persistent storage
+                float? originalSpeed = PersistentSpeedStorage.GetDefaultSpeed(entity.Index);
+                
+                if (!originalSpeed.HasValue)
+                {
+                    Mod.log.Warn($"No original speed found for entity {entity.Index}");
+                    continue;
+                }
+
+                float speedGameUnits = originalSpeed.Value / 1.8f;
+                
+                // Restore speed to sublanes
+                if (EntityManager.HasBuffer<SubLane>(entity))
+                {
+                    var subLanes = EntityManager.GetBuffer<SubLane>(entity);
+                    for (int i = 0; i < subLanes.Length; i++)
+                    {
+                        var laneEntity = subLanes[i].m_SubLane;
+                        
+                        // Restore speed for CarLane (roads)
+                        if (EntityManager.HasComponent<CarLane>(laneEntity))
+                        {
+                            var carLane = EntityManager.GetComponentData<CarLane>(laneEntity);
+                            carLane.m_SpeedLimit = speedGameUnits;
+                            EntityManager.SetComponentData(laneEntity, carLane);
+                        }
+                        // Restore speed for TrackLane (trains, trams, subways)
+                        else if (EntityManager.HasComponent<Game.Net.TrackLane>(laneEntity))
+                        {
+                            var trackLane = EntityManager.GetComponentData<Game.Net.TrackLane>(laneEntity);
+                            trackLane.m_SpeedLimit = speedGameUnits;
+                            EntityManager.SetComponentData(laneEntity, trackLane);
+                        }
+                    }
+                }
+                
+                // Remove CustomSpeed component (this will also remove the rendered overlay)
+                if (EntityManager.HasComponent<CustomSpeed>(entity))
+                {
+                    EntityManager.RemoveComponent<CustomSpeed>(entity);
+                }
+            }
+
+            // Clear persistent storage
+            PersistentSpeedStorage.Clear();
+            
+            Mod.log.Info($"Successfully cleared custom speeds from {entitiesToReset.Count} roads");
         }
     }
 }

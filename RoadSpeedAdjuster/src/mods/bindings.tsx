@@ -12,19 +12,35 @@ export const SELECTION_COUNTER = bindValue<number>(
   "RoadSpeedAdjuster",
   "BINDING:SELECTION_COUNTER"
 );
+export const SHOW_METRIC = bindValue<boolean>(
+  "RoadSpeedAdjuster",
+  "BINDING:SHOW_METRIC"
+);
+export const IS_TRACK_TYPE = bindValue<boolean>(
+  "RoadSpeedAdjuster",
+  "BINDING:IS_TRACK_TYPE"
+);
 
 export function ApplySpeed(speed: number) {
-  console.log(`ApplySpeed called with ${speed}`);
   trigger("RoadSpeedAdjuster", "TRIGGER:APPLY_SPEED", speed);
 }
 
 export function ResetSpeed() {
-  console.log("ResetSpeed called");
   trigger("RoadSpeedAdjuster", "TRIGGER:RESET_SPEED");
 }
 
 export function ActivateTool() {
-  console.log("ActivateTool called - triggering with true");
   trigger("RoadSpeedAdjuster", "TRIGGER:ACTIVATE_TOOL", true);
-  console.log("ActivateTool trigger sent with argument: true");
 }
+
+// Shared window position state
+let sharedWindowPosition = { x: window.innerWidth - 600, y: 100 };
+
+export function getSharedWindowPosition() {
+  return { ...sharedWindowPosition };
+}
+
+export function setSharedWindowPosition(position: { x: number; y: number }) {
+  sharedWindowPosition = position;
+}
+
