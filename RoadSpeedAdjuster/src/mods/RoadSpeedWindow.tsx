@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect, useRef } from "react";
 import { useValue, trigger } from "cs2/api";
-import { TOOL_ACTIVE, SHOW_METRIC, SELECTION_COUNTER, IS_TRACK_TYPE, ApplySpeed, ResetSpeed, getSharedWindowPosition, setSharedWindowPosition } from "./bindings";
+import { TOOL_ACTIVE, SHOW_METRIC, SELECTION_COUNTER, IS_TRACK_TYPE, UNIT_MODE, ApplySpeed, ResetSpeed, ToggleUnit, getSharedWindowPosition, setSharedWindowPosition } from "./bindings";
 import { getModule } from "cs2/modding";
 import { VanillaComponentResolver } from "./VanillaComponentResolver";
 import { Button } from "./Button";
@@ -41,6 +41,15 @@ export const RoadSpeedWindow = () => {
         isTrackType = false;
     }
     
+    // Watch unit mode (0 = Auto, 1 = Metric, 2 = Imperial)
+    let unitMode = 0;
+    try {
+        const value = useValue(UNIT_MODE);
+        unitMode = value ?? 0;
+    } catch (e) {
+        unitMode = 0;
+    }
+    
     // Watch selection counter to detect when user selects a new road
     let selectionCounter = 0;
     try {
@@ -63,6 +72,9 @@ export const RoadSpeedWindow = () => {
     
     // Hover state for close button
     const [isCloseHovered, setIsCloseHovered] = useState(false);
+    
+    // Hover state for help icon
+    const [isHelpHovered, setIsHelpHovered] = useState(false);
 
     const resolver = VanillaComponentResolver.instance;
     const FOCUS_DISABLED = resolver.FOCUS_DISABLED;
@@ -211,72 +223,112 @@ export const RoadSpeedWindow = () => {
     }
 
     return (
-        <div style={{
-            position: "absolute",
-            left: `${position.x}px`,
-            top: `${position.y}px`,
-            width: "400rem",
-            pointerEvents: "auto",
-        }}>
-            <Panel
-                header={
-                    <div 
-                        onMouseDown={handleMouseDown}
-                        style={{ 
-                            display: "flex", 
-                            justifyContent: "space-between", 
-                            alignItems: "center",
-                            width: "100%",
-                            cursor: isDragging ? "grabbing" : "grab"
-                        }}
-                    >
-                        <span style={{ paddingLeft: "10rem" }}>Road Speed Adjuster</span>
-                        <button 
-                            onClick={handleClose}
-                            onMouseEnter={() => setIsCloseHovered(true)}
-                            onMouseLeave={() => setIsCloseHovered(false)}
-                            style={{
-                                background: isCloseHovered ? "rgba(255, 68, 68, 0.1)" : "transparent",
-                                border: "none",
-                                color: isCloseHovered ? "#ff6666" : "#ff4444",
-                                fontSize: "18rem",
-                                fontWeight: "bold",
-                                cursor: "pointer",
-                                padding: "0 10rem",
-                                lineHeight: "1",
-                                borderRadius: "4rem",
-                                transition: "background-color 0.2s ease, color 0.2s ease, transform 0.2s ease",
-                                transform: isCloseHovered ? "scale(1.1)" : "scale(1)"
+        <>
+            <div style={{
+                position: "absolute",
+                left: `${position.x}px`,
+                top: `${position.y}px`,
+                width: "400rem",
+                pointerEvents: "auto",
+            }}>
+                <Panel
+                    header={
+                        <div 
+                            onMouseDown={handleMouseDown}
+                            style={{ 
+                                display: "flex", 
+                                justifyContent: "space-between", 
+                                alignItems: "center",
+                                width: "100%",
+                                cursor: isDragging ? "grabbing" : "grab"
                             }}
                         >
-                            X
-                        </button>
-                    </div>
-                }
-                className={PanelTheme.panel}
-            >
+                        <span style={{ paddingLeft: "10rem" }}>Road Speed Adjuster</span>
+                        <div style={{ display: "flex", alignItems: "center" }}>
+                            <button
+                                onClick={() => ToggleUnit()}
+                                style={{
+                                    background: "rgba(100, 100, 100, 0.3)",
+                                    border: "1px solid rgba(200, 200, 200, 0.4)",
+                                    borderRadius: "50%",
+                                    width: "18rem",
+                                    height: "18rem",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    cursor: "pointer",
+                                    fontSize: "12rem",
+                                    fontWeight: "bold",
+                                    color: "#ccc",
+                                    lineHeight: "1",
+                                    transition: "all 0.2s ease",
+                                    padding: "0",
+                                    marginRight: "5rem"
+                                }}
+                                title="Toggle unit preference (Auto / Metric / Imperial)"
+                            >
+                                {unitMode === 0 ? "A" : unitMode === 1 ? "M" : "I"}
+                            </button>
+                            <button
+                                onMouseEnter={() => setIsHelpHovered(true)}
+                                onMouseLeave={() => setIsHelpHovered(false)}
+                                style={{
+                                    background: "rgba(100, 100, 100, 0.3)",
+                                    border: "1px solid rgba(200, 200, 200, 0.4)",
+                                    borderRadius: "50%",
+                                    width: "18rem",
+                                    height: "18rem",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    cursor: "help",
+                                    fontSize: "12rem",
+                                    fontWeight: "bold",
+                                    color: "#ccc",
+                                    padding: "0",
+                                    lineHeight: "1",
+                                    transition: "all 0.2s ease",
+                                    marginRight: "10rem"
+                                }}
+                            >
+                                ?
+                            </button>
+                                <button 
+                                    onClick={handleClose}
+                                    onMouseEnter={() => setIsCloseHovered(true)}
+                                    onMouseLeave={() => setIsCloseHovered(false)}
+                                    style={{
+                                        background: isCloseHovered ? "rgba(255, 68, 68, 0.1)" : "transparent",
+                                        border: "none",
+                                        color: isCloseHovered ? "#ff6666" : "#ff4444",
+                                        fontSize: "18rem",
+                                        fontWeight: "bold",
+                                        cursor: "pointer",
+                                        padding: "0 10rem",
+                                        lineHeight: "1",
+                                        borderRadius: "4rem",
+                                        transition: "background-color 0.2s ease, color 0.2s ease, transform 0.2s ease",
+                                        transform: isCloseHovered ? "scale(1.1)" : "scale(1)"
+                                    }}
+                                >
+                                    X
+                                </button>
+                            </div>
+                        </div>
+                    }
+                    className={PanelTheme.panel}
+                >
             <div style={{ padding: "16rem", pointerEvents: "auto" }}>
-                {/* Info text explaining visual overlays */}
-                <div style={{
-                    marginBottom: "12rem",
-                    fontSize: "12rem",
-                    color: "#aaa",
-                    fontStyle: "italic"
-                }}>
-                    Current speed limits are shown above each road for modified roads
-                </div>
-
                 {/* Speed Slider */}
                 <div style={{ marginBottom: "12rem" }}>
                     <div style={{ 
                         marginBottom: "8rem", 
-                        fontSize: "14rem", 
+                        fontSize: "16rem", 
                         fontWeight: "bold",
-                        display: "flex",
-                        justifyContent: "space-between"
+                        textAlign: "center",
+                        whiteSpace: "nowrap"
                     }}>
-                        <span>New Speed Limit</span>
-                        <span>{displaySpeed} {unitLabel}</span>
+                        {`${displaySpeed} ${unitLabel}`}
                     </div>
                     <Slider
                         start={sliderMin}
@@ -304,6 +356,17 @@ export const RoadSpeedWindow = () => {
                     <div style={{ flex: 1, marginRight: "8rem" }}>
                         <Button
                             focusKey={FOCUS_DISABLED}
+                            selected={isResetting}
+                            disabled={isResetting}
+                            onSelect={handleReset}
+                            variant="neutral"
+                        >
+                            {isResetting ? "✓ Reset" : "Reset"}
+                        </Button>
+                    </div>
+                    <div style={{ flex: 1, marginLeft: "8rem" }}>
+                        <Button
+                            focusKey={FOCUS_DISABLED}
                             selected={isApplying}
                             disabled={isApplying}
                             onSelect={handleApply}
@@ -311,20 +374,41 @@ export const RoadSpeedWindow = () => {
                             {isApplying ? "✓ Applied" : "Apply"}
                         </Button>
                     </div>
-                    <div style={{ flex: 1, marginLeft: "8rem" }}>
-                        <Button
-                            focusKey={FOCUS_DISABLED}
-                            selected={isResetting}
-                            disabled={isResetting}
-                            onSelect={handleReset}
-                        >
-                            {isResetting ? "✓ Reset" : "Reset"}
-                        </Button>
-                    </div>
                 </div>
             </div>
         </Panel>
         </div>
+        
+        {/* Tooltip rendered at root level to escape Panel overflow */}
+        {isHelpHovered && (
+            <div style={{
+                position: "fixed",
+                left: `${position.x + 320}px`,
+                top: `${position.y + 40}px`,
+                backgroundColor: "rgba(40, 40, 40, 0.95)",
+                color: "#fff",
+                padding: "10rem 14rem",
+                borderRadius: "4rem",
+                fontSize: "11rem",
+                lineHeight: "1.4",
+                zIndex: 1000000,
+                border: "1px solid rgba(200, 200, 200, 0.3)",
+                boxShadow: "0 4rem 8rem rgba(0, 0, 0, 0.3)",
+                pointerEvents: "none",
+                maxWidth: "200rem"
+            }}>
+                <div>Select a road, train track,</div>
+                <div>subway line or tram track</div>
+                <div>and adjust its speed limit.</div>
+                <div style={{ marginTop: "6rem" }}>Click and drag to select</div>
+                <div>multiple roads/tracks.</div>
+                <div style={{ marginTop: "6rem", fontWeight: "bold" }}>Unit Toggle (A/M/I):</div>
+                <div>A = Auto (detects map theme)</div>
+                <div>M = Metric (km/h)</div>
+                <div>I = Imperial (mph)</div>
+            </div>
+        )}
+        </>
     );
 };
 

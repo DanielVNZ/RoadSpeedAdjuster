@@ -38,6 +38,7 @@ namespace RoadSpeedAdjuster.Systems
         private ValueBindingHelper<int> _selectionCounterBinding;
         private ValueBindingHelper<bool> _showMetricBinding;
         private ValueBindingHelper<bool> _isTrackTypeBinding;
+        private ValueBindingHelper<int> _unitModeBinding;
         
         private CityConfigurationSystem _cityConfigurationSystem;
         private Setting _settings;
@@ -66,9 +67,11 @@ namespace RoadSpeedAdjuster.Systems
             _selectionCounterBinding = CreateBinding("SELECTION_COUNTER", 0);
             _showMetricBinding = CreateBinding("SHOW_METRIC", true);
             _isTrackTypeBinding = CreateBinding("IS_TRACK_TYPE", false);
+            _unitModeBinding = CreateBinding("UNIT_MODE", 0);
             
             CreateTrigger<float>("APPLY_SPEED", HandleApplySpeed);
             CreateTrigger("RESET_SPEED", HandleResetSpeed);
+            CreateTrigger("TOGGLE_UNIT", HandleToggleUnit);
             
             //Mod.log.Info("RoadSpeedToolUI: Creating ACTIVATE_TOOL trigger with bool parameter...");
             CreateTrigger<bool>("ACTIVATE_TOOL", HandleActivateTool);
@@ -79,6 +82,7 @@ namespace RoadSpeedAdjuster.Systems
             _toolActiveBinding.Value = false;
             _selectionCounterBinding.Value = 0;
             _showMetricBinding.Value = ShouldShowMetric();
+            _unitModeBinding.Value = (int)(_settings?.SpeedUnitPreference ?? Setting.SpeedUnit.Auto);
             
             // Force an immediate update to ensure bindings are available to React
             // This prevents "update was not called before getValueUnsafe" errors
@@ -594,6 +598,31 @@ namespace RoadSpeedAdjuster.Systems
             }
         }
 
+        private void HandleToggleUnit()
+        {
+            if (_settings == null)
+                return;
+            
+            // Cycle through: Auto -> Metric -> Imperial -> Auto
+            _settings.SpeedUnitPreference = _settings.SpeedUnitPreference switch
+            {
+                Setting.SpeedUnit.Auto => Setting.SpeedUnit.Metric,
+                Setting.SpeedUnit.Metric => Setting.SpeedUnit.Imperial,
+                Setting.SpeedUnit.Imperial => Setting.SpeedUnit.Auto,
+                _ => Setting.SpeedUnit.Auto
+            };
+            
+            // Apply the setting changes
+            _settings.ApplyAndSave();
+            
+            // Update the bindings immediately
+            _showMetricBinding.Value = ShouldShowMetric();
+            _unitModeBinding.Value = (int)_settings.SpeedUnitPreference;
+            RequestUpdate();
+            
+            //Mod.log.Info($"Unit preference toggled to: {_settings.SpeedUnitPreference}");
+        }
+        
         private void HandleActivateTool(bool enable)
         {
             //Mod.log.Info($"HandleActivateTool: CALLED with enable={enable}");

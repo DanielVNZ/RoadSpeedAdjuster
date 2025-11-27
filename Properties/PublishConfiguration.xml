@@ -1,6 +1,6 @@
 ﻿<Publish>
 	<!--Id must be set in order to update existed mod. it is not required for publishing mod for the first time-->
-	<ModId Value="" />
+	<ModId Value="125866" />
 	<!--Name of the mod to display to players-->
 	<DisplayName Value="Road Speed Adjuster" />
 	<!--Short description of the mod-->
@@ -10,29 +10,33 @@
 	<LongDescription>
 # Road Speed Adjuster
 
-**Road Speed Adjuster** is a powerful and intuitive tool that lets you take full control over speed limits across your entire city. Supporting **Roads, Train tracks, Tram tracks, and Subway rails**, this mod gives you fine-tuned control over how fast vehicles should travel on any network type.
+**Road Speed Adjuster** is a powerful and intuitive tool that lets you take full control over speed limits across your entire city. Supporting **Roads, Train tracks, Tram tracks, and Subway rails**, this mod gives you fine-tuned control over how fast vehicles should travel on any network type (waterways coming soon).
 
 ## 🎛️ Key Features
-- **Adjust speeds on individual segments** with a simple click.
-- **Click-and-drag selection** to modify multiple segments at once for fast workflow.
-- Works seamlessly across:
-- 🚗 **Roads**
-- 🚊 **Tram tracks**
-- 🚆 **Train tracks**
-- 🚇 **Subway rails**
+
+*   **Adjust speeds on individual segments** with a simple click.
+*   **Click-and-drag selection** to modify multiple segments at once.
+*   Works seamlessly across:
+*   🚗 **Roads**
+*   🚊 **Tram tracks**
+*   🚆 **Train tracks**
+*   🚇 **Subway rails**
+
+Note: Vehicles are still limited by their max speeds
 
 ## ⚠️ Important Warning
-Removing this mod **does not reset** your customized speed limits.
-Any speeds you set will **remain applied to the network segments** even after the mod is removed.
+
+Removing this mod **does not reset** your customized speed limits. Any speeds you set will **remain applied to the network segments** even after the mod is removed.
 
 ## ❤️ Special Thanks
+
 Huge appreciation to everyone who contributed in one way or another:
 
-- **Luca**
-- **Konsi**
-- **Aberro** — creator of the original *Speed Limit Mod*
-- **TDW** — Road Builder code was a massive help
-- And everyone who tested, supported, or guided the development along the way!
+*   **Luca**
+*   **Konsi**
+*   **Aberro** — creator of the original Speed Limit Mod
+*   **TDW** — Road Builder code was a massive help
+*   And everyone who tested, supported, or guided the development along the way!
 	</LongDescription>
 	<!--Thumbnail-->
 	<Thumbnail Value="Properties/Thumbnail.png" />
@@ -45,17 +49,19 @@ Huge appreciation to everyone who contributed in one way or another:
 	<!--Link to the forum post where the mod can be discussed-->
 	<ForumLink Value="https://forum.paradoxplaza.com/forum/threads/road-speed-adjuster.1881251/" />
 	<!--Version of the mod-->
-	<ModVersion Value="1.0.0" />
+	<ModVersion Value="1.0.1" />
 	<!--Recommended version of the base game to use the mod-->
-	<GameVersion Value="1.3.*" />
+	<GameVersion Value="1.4.*" />
 	<!--Dependency for the mod, can be set multiple times-->
 	<Dependency Id="" />
 	<!--Required DLC, can be set multiple times. Supported values are "Landmark Buildings", "San Fransisco Set", "Beach Properties", "Urban Promenades", "Modern Architecture"-->
 	<RequiredDLC Value="" />
 	<!--Change log for new version. Single line or multi line. Supports minimal markdown subset-->
-	<ChangeLog Value="" />
-	<!--<ChangeLog>
-	</ChangeLog>-->
+	<ChangeLog>
+	# v1.0.1
+	
+	* Overhauled UI - Thanks Luca!
+	</ChangeLog>
 	<!--External link, can be set multiple times. supported types are "discord", "github", "youtube", "twitch", "x", "paypal", "patreon", "buymeacoffee", "kofi", "crowdin", "gitlab", "gofundme"-->
 	<ExternalLink Type="github" Url="https://github.com/DanielVNZ/RoadSpeedAdjuster" />
 </Publish>

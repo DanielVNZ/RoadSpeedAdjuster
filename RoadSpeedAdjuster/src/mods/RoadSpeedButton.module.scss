@@ -66,4 +66,22 @@
             box-shadow: none;
         }
     }
+
+    // Neutral variant - grey styling
+    &.neutral {
+        background-color: #6b7280;
+
+        &:hover {
+            background-color: #7a828f !important;
+        }
+
+        &:active {
+            background-color: #5a6169 !important;
+        }
+
+        &.selected {
+            background-color: #8b95a3;
+            box-shadow: 0 0 8rem rgba(107, 114, 128, 0.4);
+        }
+    }
 }

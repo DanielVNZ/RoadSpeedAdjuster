@@ -201,8 +201,17 @@ namespace RoadSpeedAdjuster.Systems
                             // Create transform matrix (facing camera)
                             Quaternion rotation = Quaternion.LookRotation(camera.transform.forward, camera.transform.up);
                             
-                            // Scale down to 0.6 to make text appear thinner and smaller
-                            Vector3 scale = new Vector3(0.6f, 0.6f, 0.6f);
+                            // Calculate distance-based scale so text grows when zooming out
+                            float distance = Vector3.Distance(camera.transform.position, position);
+                            // Use square root scaling for more gradual growth at mid-range
+                            // At 100 units: sqrt(100/100) * 0.6 = 0.6
+                            // At 400 units: sqrt(400/100) * 0.6 = 1.2
+                            // At 900 units: sqrt(900/100) * 0.6 = 1.8
+                            float dynamicScale = 0.6f * Mathf.Sqrt(distance / 100f);
+                            // Clamp scale to reasonable range (min 0.3, max 2.5)
+                            dynamicScale = Mathf.Clamp(dynamicScale, 0.3f, 2.5f);
+                            
+                            Vector3 scale = new Vector3(dynamicScale, dynamicScale, dynamicScale);
                             Matrix4x4 matrix = Matrix4x4.TRS(position, rotation, scale);
 
                             // Draw the text mesh

@@ -20,6 +20,10 @@ export const IS_TRACK_TYPE = bindValue<boolean>(
   "RoadSpeedAdjuster",
   "BINDING:IS_TRACK_TYPE"
 );
+export const UNIT_MODE = bindValue<number>(
+  "RoadSpeedAdjuster",
+  "BINDING:UNIT_MODE"
+);
 
 export function ApplySpeed(speed: number) {
   trigger("RoadSpeedAdjuster", "TRIGGER:APPLY_SPEED", speed);
@@ -27,6 +31,10 @@ export function ApplySpeed(speed: number) {
 
 export function ResetSpeed() {
   trigger("RoadSpeedAdjuster", "TRIGGER:RESET_SPEED");
+}
+
+export function ToggleUnit() {
+  trigger("RoadSpeedAdjuster", "TRIGGER:TOGGLE_UNIT");
 }
 
 export function ActivateTool() {
