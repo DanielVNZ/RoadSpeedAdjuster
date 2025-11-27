@@ -53,7 +53,7 @@ namespace RoadSpeedAdjuster
         /// Version information
         /// </summary>
         [SettingsUISection(kAboutTab, kAboutGroup)]
-        public string Version => "Version 1.0.1";
+        public string Version => "Version 1.0.2";
 
         /// <summary>
         /// Creator information

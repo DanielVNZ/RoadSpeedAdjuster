@@ -260,18 +260,20 @@ namespace RoadSpeedAdjuster.Systems
                 textMesh.fontStyle = FontStyles.Normal;
                 
                 // Generate speed text based on user preference
+                // Display speed at 2x the actual value
                 string speedText;
                 if (showMetric)
                 {
-                    // Show km/h
-                    speedText = $"{speedKmh} km/h";
+                    // Show km/h at 2x the actual value
+                    int displaySpeedKmh = speedKmh * 2;
+                    speedText = $"{displaySpeedKmh} km/h";
                 }
                 else
                 {
-                    // Convert to mph - use Math.Round for consistency with UI
-                    // This ensures that km/h values stored from mph selections display correctly
-                    int speedMph = Mathf.RoundToInt(speedKmh * 0.621371f);
-                    speedText = $"{speedMph} mph";
+                    // Convert to mph, then double for display
+                    int actualSpeedMph = Mathf.RoundToInt(speedKmh * 0.621371f);
+                    int displaySpeedMph = actualSpeedMph * 2;
+                    speedText = $"{displaySpeedMph} mph";
                 }
                 
                 TMP_TextInfo textInfo = textMesh.GetTextInfo(speedText);

@@ -49,7 +49,7 @@ Huge appreciation to everyone who contributed in one way or another:
 	<!--Link to the forum post where the mod can be discussed-->
 	<ForumLink Value="https://forum.paradoxplaza.com/forum/threads/road-speed-adjuster.1881251/" />
 	<!--Version of the mod-->
-	<ModVersion Value="1.0.1" />
+	<ModVersion Value="1.0.2" />
 	<!--Recommended version of the base game to use the mod-->
 	<GameVersion Value="1.4.*" />
 	<!--Dependency for the mod, can be set multiple times-->
@@ -58,9 +58,9 @@ Huge appreciation to everyone who contributed in one way or another:
 	<RequiredDLC Value="" />
 	<!--Change log for new version. Single line or multi line. Supports minimal markdown subset-->
 	<ChangeLog>
-	# v1.0.1
-	
-	* Overhauled UI - Thanks Luca!
+		# v1.0.2
+
+		* Doubled speed (UI only) - thanks to Delta and 42hoch5086
 	</ChangeLog>
 	<!--External link, can be set multiple times. supported types are "discord", "github", "youtube", "twitch", "x", "paypal", "patreon", "buymeacoffee", "kofi", "crowdin", "gitlab", "gofundme"-->
 	<ExternalLink Type="github" Url="https://github.com/DanielVNZ/RoadSpeedAdjuster" />

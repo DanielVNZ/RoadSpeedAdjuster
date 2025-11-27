@@ -96,9 +96,9 @@ export const RoadSpeedWindow = () => {
     // Get default speed based on current unit system
     const getDefaultSpeed = (): number => {
         if (showMetric) {
-            return 5; // 5 km/h
+            return 5; // 5 km/h actual (will display as 10)
         } else {
-            return mphToKmh(5); // 5 mph converted to km/h (~8 km/h)
+            return mphToKmh(5); // 5 mph actual converted to km/h (~8 km/h actual, will display as 10 mph)
         }
     };
 
@@ -118,13 +118,16 @@ export const RoadSpeedWindow = () => {
 
     const handleSliderChange = (value: number) => {
         if (showMetric) {
-            // Metric mode: round to nearest 5 km/h
-            const roundedValue = Math.round(value / 5) * 5;
+            // Metric mode: value shown is 2x, so divide by 2 to get actual km/h
+            // Round to nearest 5 km/h (on the display value, which is 10 km/h increments in actual)
+            const actualKmh = value / 2;
+            const roundedValue = Math.round(actualKmh / 5) * 5;
             setPendingSpeedKmh(roundedValue);
         } else {
-            // Imperial mode: value is in mph, convert to km/h
-            // Round the value to nearest 5 mph first to ensure clean increments
-            const roundedMph = Math.round(value / 5) * 5;
+            // Imperial mode: value shown is 2x, so divide by 2 to get actual mph
+            // Round to nearest 5 mph (on the display value)
+            const actualMph = value / 2;
+            const roundedMph = Math.round(actualMph / 5) * 5;
             const kmh = mphToKmh(roundedMph);
             setPendingSpeedKmh(kmh);
         }
@@ -205,21 +208,21 @@ export const RoadSpeedWindow = () => {
     const unitLabel = showMetric ? "km/h" : "mph";
     
     if (showMetric) {
-        // Metric mode: show km/h
-        displaySpeed = pendingSpeedKmh;
-        sliderValue = pendingSpeedKmh;
-        sliderMin = 5;
-        // Dynamic max: tracks (trains/trams/subways) can go to 240, roads only to 140
-        sliderMax = isTrackType ? 240 : 140;
-        sliderStep = 5;
+        // Metric mode: show km/h at 2x the actual value
+        displaySpeed = pendingSpeedKmh * 2;
+        sliderValue = pendingSpeedKmh * 2;
+        sliderMin = 10; // 5 km/h actual * 2 = 10 display
+        // Dynamic max: tracks (trains/trams/subways) can go to 240, roads only to 140 (actual values)
+        sliderMax = isTrackType ? 480 : 280; // Double the max values
+        sliderStep = 10; // 5 km/h actual * 2 = 10 display step
     } else {
-        // Imperial mode: show mph with proper 5 mph increments
-        displaySpeed = kmhToMph(pendingSpeedKmh);
-        sliderValue = displaySpeed; // Use the converted mph value
-        sliderMin = 5; // 5 mph
-        // Dynamic max: tracks can go to 150 mph, roads only to 85 mph
-        sliderMax = isTrackType ? 150 : 85;
-        sliderStep = 5; // 5 mph increments
+        // Imperial mode: show mph at 2x the actual value
+        displaySpeed = kmhToMph(pendingSpeedKmh) * 2;
+        sliderValue = displaySpeed; // Use the converted and doubled mph value
+        sliderMin = 10; // 5 mph actual * 2 = 10 display
+        // Dynamic max: tracks can go to 150 mph, roads only to 85 mph (actual values)
+        sliderMax = isTrackType ? 300 : 170; // Double the max values
+        sliderStep = 10; // 5 mph actual * 2 = 10 display step
     }
 
     return (
