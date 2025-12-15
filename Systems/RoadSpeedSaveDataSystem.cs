@@ -8,13 +8,12 @@ using UnityEngine.Scripting;
 namespace RoadSpeedAdjuster.Systems
 {
     /// <summary>
-    /// System that manages the RoadSpeedSaveData singleton component and persistent JSON storage.
+    /// System that manages persistent JSON storage for road speeds.
     /// Initializes per-city JSON storage when a game is loaded.
     /// Storage is based on city name, so settings persist across sessions for the same city.
     /// </summary>
     public partial class RoadSpeedSaveDataSystem : GameSystemBase
     {
-        private Entity m_SaveDataEntity;
         private GameManager _gameManager;
         private bool _initialized = false;
         private string _lastCityName = null;
@@ -24,13 +23,9 @@ namespace RoadSpeedAdjuster.Systems
         {
             base.OnCreate();
             
-            // Create singleton entity to hold save data
-            m_SaveDataEntity = EntityManager.CreateEntity();
-            EntityManager.AddComponentData(m_SaveDataEntity, new RoadSpeedSaveData());
-            
             _gameManager = GameManager.instance;
             
-            //Mod.log.Info("RoadSpeedSaveDataSystem: Created save data entity");
+            //Mod.log.Info("RoadSpeedSaveDataSystem: System created");
         }
 
         [Preserve]

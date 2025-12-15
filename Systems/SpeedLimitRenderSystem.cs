@@ -55,6 +55,7 @@ namespace RoadSpeedAdjuster.Systems
         
         // Track last known setting to detect user changes
         private Setting.SpeedUnit m_LastUnitPreference = Setting.SpeedUnit.Auto;
+        private bool m_LastDoubleSpeedDisplay = false;
 
         [Preserve]
         protected override void OnCreate()
@@ -69,8 +70,9 @@ namespace RoadSpeedAdjuster.Systems
             // Get settings
             m_Settings = Mod.m_Setting;
             
-            // Initialize last known unit preference
+            // Initialize last known unit preference and double display setting
             m_LastUnitPreference = m_Settings?.SpeedUnitPreference ?? Setting.SpeedUnit.Auto;
+            m_LastDoubleSpeedDisplay = m_Settings?.DoubleSpeedDisplay ?? false;
             
             // Create query for roads with custom speeds
             m_CustomSpeedQuery = GetEntityQuery(new EntityQueryDesc
@@ -137,16 +139,24 @@ namespace RoadSpeedAdjuster.Systems
                 }
             }
             
-            // Check if user changed the unit preference setting
+            // Check if user changed the unit preference setting or double display setting
             if (m_Settings != null)
             {
                 Setting.SpeedUnit currentPreference = m_Settings.SpeedUnitPreference;
+                bool currentDoubleDisplay = m_Settings.DoubleSpeedDisplay;
                 
                 if (currentPreference != m_LastUnitPreference)
                 {
                     //Mod.log.Info($"Unit preference changed from '{m_LastUnitPreference}' to '{currentPreference}' - clearing text mesh cache");
                     ClearTextMeshCache();
                     m_LastUnitPreference = currentPreference;
+                }
+                
+                if (currentDoubleDisplay != m_LastDoubleSpeedDisplay)
+                {
+                    //Mod.log.Info($"Double speed display changed from '{m_LastDoubleSpeedDisplay}' to '{currentDoubleDisplay}' - clearing text mesh cache");
+                    ClearTextMeshCache();
+                    m_LastDoubleSpeedDisplay = currentDoubleDisplay;
                 }
             }
         }
@@ -260,19 +270,22 @@ namespace RoadSpeedAdjuster.Systems
                 textMesh.fontStyle = FontStyles.Normal;
                 
                 // Generate speed text based on user preference
-                // Display speed at 2x the actual value
+                // Optionally display speed at 2x the actual value based on setting
+                bool doubleDisplay = m_Settings?.DoubleSpeedDisplay ?? false;
+                int multiplier = doubleDisplay ? 2 : 1;
+                
                 string speedText;
                 if (showMetric)
                 {
-                    // Show km/h at 2x the actual value
-                    int displaySpeedKmh = speedKmh * 2;
+                    // Show km/h, optionally at 2x the actual value
+                    int displaySpeedKmh = speedKmh * multiplier;
                     speedText = $"{displaySpeedKmh} km/h";
                 }
                 else
                 {
-                    // Convert to mph, then double for display
+                    // Convert to mph, optionally double for display
                     int actualSpeedMph = Mathf.RoundToInt(speedKmh * 0.621371f);
-                    int displaySpeedMph = actualSpeedMph * 2;
+                    int displaySpeedMph = actualSpeedMph * multiplier;
                     speedText = $"{displaySpeedMph} mph";
                 }
                 
@@ -294,8 +307,10 @@ namespace RoadSpeedAdjuster.Systems
                 }
 
                 // Create Unity mesh from TextMeshPro data
+                string doubleSuffix = doubleDisplay ? "_2x" : "";
+                
                 Mesh mesh = new Mesh();
-                mesh.name = $"SpeedLimit_{speedKmh}_{(showMetric ? "kmh" : "mph")}";
+                mesh.name = $"SpeedLimit_{speedKmh}_{(showMetric ? "kmh" : "mph")}{doubleSuffix}";
                 mesh.vertices = tmpMeshInfo.vertices;
                 mesh.triangles = tmpMeshInfo.triangles;
                 mesh.uv = tmpMeshInfo.uvs0;
@@ -305,7 +320,7 @@ namespace RoadSpeedAdjuster.Systems
 
                 // Create material with proper texture and settings
                 Material material = new Material(tmpMeshInfo.material);
-                material.name = $"SpeedLimitMaterial_{speedKmh}_{(showMetric ? "kmh" : "mph")}";
+                material.name = $"SpeedLimitMaterial_{speedKmh}_{(showMetric ? "kmh" : "mph")}{doubleSuffix}";
                 material.SetColor(m_FaceColorID, new Color(1f, 1f, 1f, 1f)); // Opaque white
                 
                 // Slim, clean text — remove the bold SDF expansion

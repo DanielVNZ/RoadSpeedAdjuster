@@ -32,6 +32,12 @@ namespace RoadSpeedAdjuster
         public SpeedUnit SpeedUnitPreference { get; set; } = SpeedUnit.Auto;
 
         /// <summary>
+        /// Display speed limits at 2x the actual value (for visual clarity)
+        /// </summary>
+        [SettingsUISection(kMainTab, kDisplayGroup)]
+        public bool DoubleSpeedDisplay { get; set; } = false;
+
+        /// <summary>
         /// Button to clear all custom speeds from roads in the current city
         /// </summary>
         [SettingsUIButton]
@@ -53,7 +59,7 @@ namespace RoadSpeedAdjuster
         /// Version information
         /// </summary>
         [SettingsUISection(kAboutTab, kAboutGroup)]
-        public string Version => "Version 1.0.2";
+        public string Version => "Version 1.0.3";
 
         /// <summary>
         /// Creator information
@@ -70,6 +76,7 @@ namespace RoadSpeedAdjuster
         public override void SetDefaults()
         {
             SpeedUnitPreference = SpeedUnit.Auto;
+            DoubleSpeedDisplay = false;
         }
 
         private void ClearAllCustomSpeedsAction()
@@ -153,6 +160,10 @@ namespace RoadSpeedAdjuster
                 // Speed Unit Preference
                 { m_Setting.GetOptionLabelLocaleID(nameof(Setting.SpeedUnitPreference)), "Speed Unit" },
                 { m_Setting.GetOptionDescLocaleID(nameof(Setting.SpeedUnitPreference)), "Choose how speed limits are displayed in floating text overlays. 'Auto' uses map theme (EU=km/h, US=mph)." },
+
+                // Double Speed Display
+                { m_Setting.GetOptionLabelLocaleID(nameof(Setting.DoubleSpeedDisplay)), "Double Speed Display" },
+                { m_Setting.GetOptionDescLocaleID(nameof(Setting.DoubleSpeedDisplay)), "Display speed limits at 2x the actual value (e.g., 50 km/h actual shows as 100 km/h). This affects both the UI slider and rendered text overlays." },
 
                 // Enum values
                 { m_Setting.GetEnumValueLocaleID(Setting.SpeedUnit.Auto), "Auto (Detect from Map)" },

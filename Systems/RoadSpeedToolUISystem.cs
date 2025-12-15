@@ -39,6 +39,7 @@ namespace RoadSpeedAdjuster.Systems
         private ValueBindingHelper<bool> _showMetricBinding;
         private ValueBindingHelper<bool> _isTrackTypeBinding;
         private ValueBindingHelper<int> _unitModeBinding;
+        private ValueBindingHelper<bool> _doubleSpeedDisplayBinding;
         
         private CityConfigurationSystem _cityConfigurationSystem;
         private Setting _settings;
@@ -68,6 +69,7 @@ namespace RoadSpeedAdjuster.Systems
             _showMetricBinding = CreateBinding("SHOW_METRIC", true);
             _isTrackTypeBinding = CreateBinding("IS_TRACK_TYPE", false);
             _unitModeBinding = CreateBinding("UNIT_MODE", 0);
+            _doubleSpeedDisplayBinding = CreateBinding("DOUBLE_SPEED_DISPLAY", false);
             
             CreateTrigger<float>("APPLY_SPEED", HandleApplySpeed);
             CreateTrigger("RESET_SPEED", HandleResetSpeed);
@@ -83,6 +85,7 @@ namespace RoadSpeedAdjuster.Systems
             _selectionCounterBinding.Value = 0;
             _showMetricBinding.Value = ShouldShowMetric();
             _unitModeBinding.Value = (int)(_settings?.SpeedUnitPreference ?? Setting.SpeedUnit.Auto);
+            _doubleSpeedDisplayBinding.Value = _settings?.DoubleSpeedDisplay ?? false;
             
             // Force an immediate update to ensure bindings are available to React
             // This prevents "update was not called before getValueUnsafe" errors
@@ -175,6 +178,13 @@ namespace RoadSpeedAdjuster.Systems
             if (_showMetricBinding.Value != showMetric)
             {
                 _showMetricBinding.Value = showMetric;
+            }
+            
+            // Update double speed display setting
+            bool doubleSpeedDisplay = _settings?.DoubleSpeedDisplay ?? false;
+            if (_doubleSpeedDisplayBinding.Value != doubleSpeedDisplay)
+            {
+                _doubleSpeedDisplayBinding.Value = doubleSpeedDisplay;
             }
             
             // If tool just became inactive, clear the panel

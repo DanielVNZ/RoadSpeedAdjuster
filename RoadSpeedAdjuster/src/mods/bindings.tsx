@@ -24,6 +24,10 @@ export const UNIT_MODE = bindValue<number>(
   "RoadSpeedAdjuster",
   "BINDING:UNIT_MODE"
 );
+export const DOUBLE_SPEED_DISPLAY = bindValue<boolean>(
+  "RoadSpeedAdjuster",
+  "BINDING:DOUBLE_SPEED_DISPLAY"
+);
 
 export function ApplySpeed(speed: number) {
   trigger("RoadSpeedAdjuster", "TRIGGER:APPLY_SPEED", speed);

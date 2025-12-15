@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect, useRef } from "react";
 import { useValue, trigger } from "cs2/api";
-import { TOOL_ACTIVE, SHOW_METRIC, SELECTION_COUNTER, IS_TRACK_TYPE, UNIT_MODE, ApplySpeed, ResetSpeed, ToggleUnit, getSharedWindowPosition, setSharedWindowPosition } from "./bindings";
+import { TOOL_ACTIVE, SHOW_METRIC, SELECTION_COUNTER, IS_TRACK_TYPE, UNIT_MODE, DOUBLE_SPEED_DISPLAY, ApplySpeed, ResetSpeed, ToggleUnit, getSharedWindowPosition, setSharedWindowPosition } from "./bindings";
 import { getModule } from "cs2/modding";
 import { VanillaComponentResolver } from "./VanillaComponentResolver";
 import { Button } from "./Button";
@@ -50,6 +50,15 @@ export const RoadSpeedWindow = () => {
         unitMode = 0;
     }
     
+    // Watch double speed display setting
+    let doubleSpeedDisplay = false;
+    try {
+        const value = useValue(DOUBLE_SPEED_DISPLAY);
+        doubleSpeedDisplay = value ?? false;
+    } catch (e) {
+        doubleSpeedDisplay = false;
+    }
+    
     // Watch selection counter to detect when user selects a new road
     let selectionCounter = 0;
     try {
@@ -96,9 +105,9 @@ export const RoadSpeedWindow = () => {
     // Get default speed based on current unit system
     const getDefaultSpeed = (): number => {
         if (showMetric) {
-            return 5; // 5 km/h actual (will display as 10)
+            return 5; // 5 km/h actual (will display as 10 if doubling enabled)
         } else {
-            return mphToKmh(5); // 5 mph actual converted to km/h (~8 km/h actual, will display as 10 mph)
+            return mphToKmh(5); // 5 mph actual converted to km/h (~8 km/h actual)
         }
     };
 
@@ -118,15 +127,13 @@ export const RoadSpeedWindow = () => {
 
     const handleSliderChange = (value: number) => {
         if (showMetric) {
-            // Metric mode: value shown is 2x, so divide by 2 to get actual km/h
-            // Round to nearest 5 km/h (on the display value, which is 10 km/h increments in actual)
-            const actualKmh = value / 2;
+            // Metric mode: if doubling is enabled, divide by 2 to get actual km/h
+            const actualKmh = doubleSpeedDisplay ? value / 2 : value;
             const roundedValue = Math.round(actualKmh / 5) * 5;
             setPendingSpeedKmh(roundedValue);
         } else {
-            // Imperial mode: value shown is 2x, so divide by 2 to get actual mph
-            // Round to nearest 5 mph (on the display value)
-            const actualMph = value / 2;
+            // Imperial mode: if doubling is enabled, divide by 2 to get actual mph
+            const actualMph = doubleSpeedDisplay ? value / 2 : value;
             const roundedMph = Math.round(actualMph / 5) * 5;
             const kmh = mphToKmh(roundedMph);
             setPendingSpeedKmh(kmh);
@@ -206,23 +213,25 @@ export const RoadSpeedWindow = () => {
     let sliderMax: number;
     let sliderStep: number;
     const unitLabel = showMetric ? "km/h" : "mph";
+    const multiplier = doubleSpeedDisplay ? 2 : 1;
     
     if (showMetric) {
-        // Metric mode: show km/h at 2x the actual value
-        displaySpeed = pendingSpeedKmh * 2;
-        sliderValue = pendingSpeedKmh * 2;
-        sliderMin = 10; // 5 km/h actual * 2 = 10 display
+        // Metric mode: optionally show km/h at 2x the actual value
+        displaySpeed = pendingSpeedKmh * multiplier;
+        sliderValue = pendingSpeedKmh * multiplier;
+        sliderMin = 5 * multiplier;
         // Dynamic max: tracks (trains/trams/subways) can go to 240, roads only to 140 (actual values)
-        sliderMax = isTrackType ? 480 : 280; // Double the max values
-        sliderStep = 10; // 5 km/h actual * 2 = 10 display step
+        sliderMax = (isTrackType ? 240 : 140) * multiplier;
+        sliderStep = 5 * multiplier;
     } else {
-        // Imperial mode: show mph at 2x the actual value
-        displaySpeed = kmhToMph(pendingSpeedKmh) * 2;
-        sliderValue = displaySpeed; // Use the converted and doubled mph value
-        sliderMin = 10; // 5 mph actual * 2 = 10 display
+        // Imperial mode: optionally show mph at 2x the actual value
+        const actualMph = kmhToMph(pendingSpeedKmh);
+        displaySpeed = actualMph * multiplier;
+        sliderValue = displaySpeed;
+        sliderMin = 5 * multiplier;
         // Dynamic max: tracks can go to 150 mph, roads only to 85 mph (actual values)
-        sliderMax = isTrackType ? 300 : 170; // Double the max values
-        sliderStep = 10; // 5 mph actual * 2 = 10 display step
+        sliderMax = (isTrackType ? 150 : 85) * multiplier;
+        sliderStep = 5 * multiplier;
     }
 
     return (
