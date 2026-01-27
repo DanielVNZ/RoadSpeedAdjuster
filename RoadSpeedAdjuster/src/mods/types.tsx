@@ -93,3 +93,11 @@ export type VanillaInfoLinkProps = {
     uppercase?: boolean;
     onSelect?: (x: any) => any;
 };
+
+// Watch unit mode (0 = Auto, 1 = Metric, 2 = Imperial)
+export const enum UnitMode { 
+    Auto = 0,
+    Metric = 1,
+    Imperial = 2
+}
+
