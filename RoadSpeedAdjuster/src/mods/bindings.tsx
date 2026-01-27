@@ -1,4 +1,5 @@
 ﻿import { bindValue, trigger } from "cs2/api";
+import { UnitMode } from "./types";
 
 export const INITIAL_SPEED = bindValue<number>(
   "RoadSpeedAdjuster",
@@ -20,7 +21,7 @@ export const IS_TRACK_TYPE = bindValue<boolean>(
   "RoadSpeedAdjuster",
   "BINDING:IS_TRACK_TYPE"
 );
-export const UNIT_MODE = bindValue<number>(
+export const UNIT_MODE = bindValue<UnitMode>(
   "RoadSpeedAdjuster",
   "BINDING:UNIT_MODE"
 );

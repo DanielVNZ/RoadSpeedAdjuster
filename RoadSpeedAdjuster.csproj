@@ -82,10 +82,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Utils\" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<Content Include="RoadSpeedAdjuster\**\*.*" />
 	</ItemGroup>
 
